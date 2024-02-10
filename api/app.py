@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import random
 from base64 import b64encode
@@ -23,23 +24,58 @@ def find(cid:str,field="cid"):
     return None
 
 
+def delete(cid:str,field="cid"):
+  rc=collection.delete_one({field:cid})
+  return rc.deleted_count==1
 
-def generate_cid(url:str) -> str:
-  obj=find(url,"url")
 
-  cid=obj["cid"] if obj else None
-  if cid is None:
-    while True:
+def get_url(cid:str) -> str:
+  data=find(cid)
+  if data["service"]!="":
+    _service=collection["services"].find_one({"service":data["service"]})
+    url=_service["url"].replace("{url}",str(base64.b64encode(bytes(data["url"])),"utf8"))
+  else:
+    url=data["url"]
+
+  return url
+
+
+def generate_cid(ntry=3000) -> str:
+    """
+
+    :param ntry:
+    :return:
+    """
+    for _ in range(ntry):
       cid=toBase64(random.randint(1,9999999999))
-      if find(cid) is None: break
+      if find(cid) is None: return cid
 
-  return cid
+    return ""
 
 
-def add_url(url:str) -> dict:
-  data={"cid":generate_cid(url),"url":url}
-  if not data in collection:
+def add_service(service:str,url:str):
+  _service=collection["services"].find({"service":service})
+  if _service is None:
+    collection["services"].insert_one({"service":service,"url":url})
+
+
+def add_url(url:str,service:str="") -> dict:
+  """
+
+  :param url:
+  :return:
+  """
+  obj=find(url,"url")
+  if obj:
+    cid=obj["cid"]
+  else:
+    cid=generate_cid()
+    if cid=="": return {"error":"incorrect"}
+
+  data={"cid":cid,"url":url,"service":service}
+  if obj is None:
     collection.insert_one(data)
+
   return data
 
 
@@ -48,12 +84,12 @@ def add_url(url:str) -> dict:
 @app.route("/api", methods=["POST"])
 def data(cid=""):
   if request.method == "GET":
-
-    data=find(cid)
-    return jsonify(data if data else {"Error":f"{cid} introuvable"})
+    url=get_url(cid)
+    return jsonify({"url":url} if len(url)>0 else {"Error":f"{cid} introuvable"})
 
   elif request.method == "POST":
-    data=add_url(request.json["url"])
+    service=request.json["service"] if "service" in request.json else ""
+    data=add_url(request.json["url"],service)
     return jsonify(data)
 
 if __name__ == "__main__":
