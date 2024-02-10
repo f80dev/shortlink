@@ -1,5 +1,4 @@
 import base64
-import hashlib
 import random
 from base64 import b64encode
 
@@ -17,11 +16,7 @@ def toBase64(n:int):
 
 
 def find(cid:str,field="cid"):
-  data = list(collection.find({field:cid}))
-  if len(data)>0:
-    return data[0]
-  else:
-    return None
+  return collection.find_one({field:cid})
 
 
 def delete(cid:str,field="cid"):
@@ -30,10 +25,11 @@ def delete(cid:str,field="cid"):
 
 
 def get_url(cid:str) -> str:
-  data=find(cid)
+  data=find(cid,"cid")
+  if data is None: return f"{cid} inconnu"
   if data["service"]!="":
     _service=collection["services"].find_one({"service":data["service"]})
-    url=_service["url"].replace("{url}",str(base64.b64encode(bytes(data["url"])),"utf8"))
+    url=_service["url"].replace("{url}",str(base64.b64encode(bytes(data["url"],"utf8")),"utf8"))
   else:
     url=data["url"]
 
@@ -53,13 +49,18 @@ def generate_cid(ntry=3000) -> str:
     return ""
 
 
+def del_service(service:str):
+  rc=collection["services"].delete_one({"service":service})
+  return rc.deleted_count>0
+
 def add_service(service:str,url:str):
-  _service=collection["services"].find({"service":service})
+  _service=collection["services"].find_one({"service":service})
   if _service is None:
-    collection["services"].insert_one({"service":service,"url":url})
+    rc=collection["services"].insert_one({"service":service,"url":url})
+    return rc.acknowledged
 
 
-def add_url(url:str,service:str="") -> dict:
+def add_url(url:str,service:str="") -> str:
   """
 
   :param url:
@@ -72,11 +73,14 @@ def add_url(url:str,service:str="") -> dict:
     cid=generate_cid()
     if cid=="": return {"error":"incorrect"}
 
-  data={"cid":cid,"url":url,"service":service}
   if obj is None:
+    if collection.find_one({"service":service}) is None:
+      return {"error":f"Service {service} inconnu"}
+
+    data={"cid":cid,"url":url,"service":service}
     collection.insert_one(data)
 
-  return data
+  return cid
 
 
 

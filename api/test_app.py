@@ -1,6 +1,9 @@
-import base64
+from app import add_url, find, delete, add_service, del_service, get_url
 
-from app import toBase64, generate_cid, add_url, find, delete
+
+def test_add_service():
+  del_service("nftcheck")
+  assert add_service("nftcheck","https://gate.nfluent.io/?url={url}")
 
 
 def test_add_same_url():
@@ -27,5 +30,18 @@ def test_add_url():
     data=add_url(url)
     assert data not in rc
     rc.append(data)
+
+
+def test_add_url_with_service(url="https://lemonde.fr",service="nftcheck"):
+  cid=add_url(url,service)
+  assert cid
+  return cid
+
+def test_get_url_with_service(url="https://nfluent.io"):
+  cid=test_add_url_with_service(url,"nftcheck")
+  result=get_url(cid)
+  assert len(result)>0
+
+
 
 
