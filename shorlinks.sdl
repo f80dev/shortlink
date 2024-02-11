@@ -1,0 +1,33 @@
+---
+version: "2.0"
+services:
+  shortlinks:
+    image: f80hub/shorlinks
+    expose:
+      - port: 80
+        as: 80
+        to:
+          - global: true
+    env:
+      - PASSWORD=oasis4271
+profiles:
+  compute:
+    shortlinks:
+      resources:
+        cpu:
+          units: 0.1
+        memory:
+          size: 243Mi
+        storage:
+          - size: 200Mi
+  placement:
+    dcloud:
+      pricing:
+        shortlinks:
+          denom: uakt
+          amount: 1000
+deployment:
+  shortlinks:
+    dcloud:
+      profile: shortlinks
+      count: 1
