@@ -1,5 +1,5 @@
-#docker build -t shortlinks .
-#docker push f80hub/shortlinks
+#docker build -t f80hub/shortlinks .
+#docker push f80hub/shortlinks:latest
 
 FROM python:3.13.0a3-alpine3.18
 

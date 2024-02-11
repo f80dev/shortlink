@@ -8,8 +8,8 @@ def test_add_service():
 
 def test_add_same_url():
   url="https://lemonde.fr"
-  cid1=add_url(url)["cid"]
-  cid2=add_url(url)["cid"]
+  cid1=add_url(url)
+  cid2=add_url(url)
   assert cid1==cid2
 
 
@@ -32,12 +32,20 @@ def test_add_url():
     rc.append(data)
 
 
+
+def test_add_url_without_service(url="https://liberation.fr"):
+  delete(url,"url")
+  cid=add_url(url)
+  redirect_url=get_url(cid)
+  assert redirect_url==url
+
 def test_add_url_with_service(url="https://lemonde.fr",service="nftcheck"):
   cid=add_url(url,service)
-  assert cid
+  assert len(cid)>0
   return cid
 
 def test_get_url_with_service(url="https://nfluent.io"):
+  test_add_service()
   cid=test_add_url_with_service(url,"nftcheck")
   result=get_url(cid)
   assert len(result)>0
