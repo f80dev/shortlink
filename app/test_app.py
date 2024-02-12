@@ -1,4 +1,5 @@
-from app import add_url, find, delete, add_service, del_service, get_url
+from app import add_url, get_url
+from tools import del_service, add_service, delete, find, _all
 
 
 def test_add_service():
@@ -11,6 +12,11 @@ def test_add_same_url():
   cid1=add_url(url)
   cid2=add_url(url)
   assert cid1==cid2
+
+
+def test_admin():
+  rc=_all()
+  assert len(rc)>0
 
 
 def test_find():
@@ -49,7 +55,3 @@ def test_get_url_with_service(url="https://nfluent.io"):
   cid=test_add_url_with_service(url,"nftcheck")
   result=get_url(cid)
   assert len(result)>0
-
-
-
-

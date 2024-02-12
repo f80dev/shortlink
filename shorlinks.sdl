@@ -4,8 +4,8 @@ services:
   shortlinks:
     image: f80hub/shortlinks:latest
     expose:
-      - port: 5000
-        as: 5000
+      - port: 80
+        as: 80
         to:
           - global: true
     env:
@@ -17,9 +17,9 @@ profiles:
         cpu:
           units: 0.1
         memory:
-          size: 250Mi
+          size: 512Mi
         storage:
-          - size: 250Mi
+          - size: 512Mi
   placement:
     dcloud:
       pricing:
