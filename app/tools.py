@@ -1,15 +1,13 @@
 
 import base64
 import datetime
+import os
 import random
 from base64 import b64encode
 
 from pymongo import MongoClient
 
-from secret import DBPATH
-
-db = MongoClient(DBPATH)["shortlinks"]
-
+db = MongoClient(os.environ["DBPATH"])[os.environ["DBNAME"]]
 
 def toBase64(n:int):
   nombre_bytes = n.to_bytes((n.bit_length() + 7) // 8, byteorder="big")
@@ -24,7 +22,7 @@ def _all(limit=2000):
   rc=[]
   for obj in db["links"].find().limit(limit):
     del obj["_id"]
-    rc.append(obj)
+    rc.append(dict(obj))
   return rc
 
 def delete(cid:str,field="cid"):
@@ -36,7 +34,13 @@ def delete(cid:str,field="cid"):
 
 def get_url(cid:str) -> str:
   data=find(cid,"cid")
+
+  #Condition d'éligibilité
+  now=int(datetime.datetime.now().timestamp())
+  if is_expired(data): return ""
   if data is None: return f"{cid} inconnu"
+
+
   if data["service"]!="":
     _service=db["services"].find_one({"service":data["service"]})
     url=_service["url"].replace("{url}",str(base64.b64encode(bytes(data["url"],"utf8")),"utf8"))
@@ -54,7 +58,8 @@ def generate_cid(ntry=3000) -> str:
   """
   for _ in range(ntry):
     cid=toBase64(random.randint(1,9999999999))
-    if find(cid) is None: return cid
+    if not "/" in cid:
+      if find(cid) is None: return cid
 
   return ""
 
@@ -71,17 +76,27 @@ def add_service(service:str,url:str):
     return rc.acknowledged
 
 
+def is_expired(data:dict) -> bool:
+  now=int(datetime.datetime.now().timestamp())
+  if data["duration"]>0 and data["dtCreate"]+data["duration"]<now: return True
+  return False
 
-def add_url(url:str,service:str="") -> str:
+
+def add_url(url:str,service:str="",prefix="",duration=0) -> str:
   """
 
   :param url:
   :return:
   """
+  cid=None
   obj=find(url,"url")
   if obj:
-    cid=obj["cid"]
-  else:
+    if is_expired(obj):
+      delete(url,"url")
+    else:
+      cid=obj["cid"]
+
+  if cid is None:
     cid=generate_cid()
     if cid=="": raise RuntimeError("impossible de généré le CID")
 
@@ -89,8 +104,8 @@ def add_url(url:str,service:str="") -> str:
     if len(service)>0 and db["services"].find_one({"service":service}) is None:
       raise RuntimeError(f"Service {service} inconnu")
 
-    now=datetime.datetime().timestamp()
-    data={"cid":cid,"url":url,"service":service,"dtCreate":now}
+    now=int(datetime.datetime.now().timestamp())
+    data={"cid":cid,"url":url,"service":service,"dtCreate":now,"duration":duration}
     db["links"].insert_one(data)
 
-  return cid
+  return prefix+cid
