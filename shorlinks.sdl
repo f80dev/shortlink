@@ -2,18 +2,19 @@
 version: "2.0"
 services:
   shortlinks:
-    image: f80hub/shortlinksv2
+    image: f80hub/shortlinksv11
     expose:
-      - port: 80
-        as: 80
+      - port: 443
+        as: 443
         to:
           - global: true
         accept:
           - "x.f80.fr"
     env:
       - PASSWORD=oasis4271
-      - DBPATH=mongodb://root:hh4271@38.242.210.208:27017/?tls=false
+      - DBPATH=mongodb+srv://Hhoareau:hh4271@cluster0.mr2j9.mongodb.net/?retryWrites=true&w=majority
       - DBNAME=shortlinks
+      - PORT=443
 profiles:
   compute:
     shortlinks:
@@ -21,7 +22,7 @@ profiles:
         cpu:
           units: 0.1
         memory:
-          size: 2048Mi
+          size: 512Mi
         storage:
           - size: 512Mi
   placement:

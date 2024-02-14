@@ -7,7 +7,16 @@ from base64 import b64encode
 
 from pymongo import MongoClient
 
-db = MongoClient(os.environ["DBPATH"])[os.environ["DBNAME"]]
+#valeurs possibles
+#  - mongodb://root:hh4271@38.242.210.208:27017/?tls=false
+#  - mongodb+srv://Hhoareau:hh4271@cluster0.mr2j9.mongodb.net/?retryWrites=true&w=majority
+
+dbpath=os.environ["DBPATH"] if "DBPATH" in os.environ else "mongodb+srv://Hhoareau:hh4271@cluster0.mr2j9.mongodb.net/?retryWrites=true&w=majority"
+dbname=os.environ["DBNAME"] if "DBNAME" in os.environ else "shortlinks"
+db = MongoClient(dbpath)[dbname]
+#db = MongoClient("mongodb://root:hh4271@38.242.210.208:27017/?tls=false")["shortlinks"]
+
+
 
 def toBase64(n:int):
   nombre_bytes = n.to_bytes((n.bit_length() + 7) // 8, byteorder="big")

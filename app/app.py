@@ -1,10 +1,15 @@
 import logging
 import os
+import ssl
+import sys
 
 from flask import Flask, request, jsonify, redirect
-from tools import get_url, add_url, find, _all
+from flask_cors import CORS
+
+from tools import get_url, add_url,  _all
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/api/admin/", methods=["GET"])
 def admin_api():
@@ -12,6 +17,7 @@ def admin_api():
   test : http://x.f80.fr/api/admin/
   test: http://ipb2hoaif5bd77av6sahov5l2k.ingress.europlots.com/api/admin/
   test: http://127.0.0.1:5000/api/admin/
+  test: https://192.168.1.62/api/admin/   dans ce cas le port exposé est 443
   :return:
   """
   rc=_all(1000)
@@ -20,8 +26,11 @@ def admin_api():
 
 @app.route("/api/infos/", methods=["GET"])
 def info_api():
+
   """
   test: http://127.0.0.1:5000/api/infos/
+  test: https://192.168.1.62/api/infos/   dans ce cas le port exposé est 443
+
   :return:
   """
   return jsonify({"message":"ok"})
@@ -54,4 +63,14 @@ def data(cid=""):
     return data
 
 if __name__ == "__main__":
-  app.run(debug=False,port=int(os.environ["PORT"]))
+  port=(os.environ["PORT"] if "PORT" in os.environ else None) or (sys.argv[1] if len(sys.argv)>1 and sys.argv[1].isdigit() else None) or "8080"
+  if "ssl" in sys.argv:
+    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    #voir https://docs.python.org/3/library/ssl.html#ssl.SSLContext
+    #conversion https://www.sslshopper.com/assets/snippets/sslshopper/ssl-converter.php
+    #context.load_cert_chain(certfile="f80.fr_ssl_certificate.cer",keyfile="_.f80.fr_private_key.pem",password="hh4271")
+    context.load_cert_chain(certfile="cert.pem",keyfile="key.pem")
+    app.run(debug=False,host="0.0.0.0",port=int(port),ssl_context=context)
+  else:
+    logging.info("Connexion sans SSL sur port "+port)
+    app.run(debug=True,host="0.0.0.0",port=int(port))
