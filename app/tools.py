@@ -7,6 +7,8 @@ from base64 import b64encode
 
 from pymongo import MongoClient
 
+CACHE_SIZE=1000
+
 #valeurs possibles
 #  - mongodb://root:hh4271@38.242.210.208:27017/?tls=false
 #  - mongodb+srv://Hhoareau:hh4271@cluster0.mr2j9.mongodb.net/?retryWrites=true&w=majority
@@ -16,15 +18,18 @@ dbname=os.environ["DBNAME"] if "DBNAME" in os.environ else "shortlinks"
 db = MongoClient(dbpath)[dbname]
 #db = MongoClient("mongodb://root:hh4271@38.242.210.208:27017/?tls=false")["shortlinks"]
 
-
+cache=list()
 
 def toBase64(n:int):
   nombre_bytes = n.to_bytes((n.bit_length() + 7) // 8, byteorder="big")
   return b64encode(nombre_bytes).decode("ascii")
 
 
-def find(cid:str,field="cid"):
-  return db["links"].find_one({field:cid})
+def find(value:str,field="cid"):
+  for c in cache:
+    if c[field]==value: return c
+
+  return db["links"].find_one({field:value})
 
 
 def _all(limit=2000):
@@ -34,8 +39,11 @@ def _all(limit=2000):
     rc.append(dict(obj))
   return rc
 
-def delete(cid:str,field="cid"):
-  rc=db["links"].delete_one({field:cid})
+def delete(value:str,field="cid"):
+  for c in cache:
+    if c[field]==value: cache.remove(c)
+
+  rc=db["links"].delete_one({field:value})
   return rc.deleted_count==1
 
 
@@ -77,6 +85,14 @@ def del_service(service:str):
   rc=db["services"].delete_one({"service":service})
   return rc.deleted_count>0
 
+def get_services():
+  rc=list(db["services"].find())
+  for service in rc:
+    del service["_id"]
+  return rc
+
+
+
 
 def add_service(service:str,url:str):
   _service=db["services"].find_one({"service":service})
@@ -116,5 +132,8 @@ def add_url(url:str,service:str="",prefix="",duration=0) -> str:
     now=int(datetime.datetime.now().timestamp())
     data={"cid":cid,"url":url,"service":service,"dtCreate":now,"duration":duration}
     db["links"].insert_one(data)
+
+    cache.insert(data,0)
+    if len(cache)>CACHE_SIZE: cache.remove(cache[CACHE_SIZE])       #La taille du cache se limite a CACHE_SIZE
 
   return prefix+cid

@@ -5,6 +5,9 @@ from app import add_url, get_url, app
 from tools import del_service, add_service, delete, find, _all
 
 
+def test_load_services():
+  add_service("")
+
 def test_add_service():
   del_service("nftcheck")
   assert add_service("nftcheck","https://gate.nfluent.io/?url={url}")

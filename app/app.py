@@ -1,15 +1,18 @@
+import base64
 import logging
 import os
 import ssl
 import sys
+from json import dump, dumps
 
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 
-from tools import get_url, add_url,  _all
+from tools import get_url, add_url, _all, get_services
 
 app = Flask(__name__)
 CORS(app)
+
 
 @app.route("/api/admin/", methods=["GET"])
 def admin_api():
@@ -36,23 +39,33 @@ def info_api():
   return jsonify({"message":"ok"})
 
 
+@app.route("/api/services/", methods=["GET"])
+def services_api():
+    return jsonify(get_services())
+
 
 
 @app.route("/t<cid>", methods=["GET"])
 @app.route("/api/add/", methods=["POST"])
-def data(cid=""):
+def ap_get(cid=""):
   if request.method == "GET":
     if cid=="favicon.ico": return jsonify({"message":"ok"})
 
     url=get_url(cid)
+    if type(url)==dict and "redirect" in url:
+      r=url["redirect"]
+      del url["redirect"]
+      if not r.startswith("http"):r="https://"+r
+      url=r+"/?p="+str(base64.b64encode(bytes(dumps(url),"utf8")),"utf8")
+      logging.log(logging.INFO, "Transfert vers " + url)
 
-    format=request.args.get("format","redirect")
+    format=request.args.get("format","redirect") if type(url)==str else "json"
     if format=="json": return jsonify({"url":url} if len(url)>0 else {"Error":f"{cid} introuvable"})
     if format=="text": return url
     return redirect(url)
 
-
   elif request.method == "POST":
+
     #récupration des parametres
     url=request.json["url"]
     duration=request.json["duration"] if "duration" in request.json else 0
@@ -60,7 +73,9 @@ def data(cid=""):
 
     logging.info(f"Création d'un lien {url} pour le service {service} avec une durée de validité de {duration}")
     data=add_url(url,service,prefix="t",duration=duration)
-    return data
+    return jsonify({"cid":data})
+
+
 
 if __name__ == "__main__":
   port=(os.environ["PORT"] if "PORT" in os.environ else None) or (sys.argv[1] if len(sys.argv)>1 and sys.argv[1].isdigit() else None) or "8080"
