@@ -19,6 +19,7 @@ db = MongoClient(dbpath)[dbname]
 #db = MongoClient("mongodb://root:hh4271@38.242.210.208:27017/?tls=false")["shortlinks"]
 
 cache=list()
+stats={"dtStart":datetime.datetime.now(),"read":0,"write":0}
 
 def toBase64(n:int):
   nombre_bytes = n.to_bytes((n.bit_length() + 7) // 8, byteorder="big")
@@ -29,6 +30,7 @@ def find(value:str,field="cid"):
   for c in cache:
     if c[field]==value: return c
 
+  stats["read"]+=1
   return db["links"].find_one({field:value})
 
 
@@ -43,6 +45,7 @@ def delete(value:str,field="cid"):
   for c in cache:
     if c[field]==value: cache.remove(c)
 
+  stats["write"]+=1
   rc=db["links"].delete_one({field:value})
   return rc.deleted_count==1
 
@@ -56,7 +59,6 @@ def get_url(cid:str) -> str:
   now=int(datetime.datetime.now().timestamp())
   if is_expired(data): return ""
   if data is None: return f"{cid} inconnu"
-
 
   if data["service"]!="":
     _service=db["services"].find_one({"service":data["service"]})
@@ -82,6 +84,7 @@ def generate_cid(ntry=3000) -> str:
 
 
 def del_service(service:str):
+
   rc=db["services"].delete_one({"service":service})
   return rc.deleted_count>0
 
@@ -89,6 +92,7 @@ def get_services():
   rc=list(db["services"].find())
   for service in rc:
     del service["_id"]
+  rc.append({"service":"Redirection simple","url":"","dtCreate":0})
   return rc
 
 
@@ -97,6 +101,7 @@ def get_services():
 def add_service(service:str,url:str):
   _service=db["services"].find_one({"service":service})
   if _service is None:
+    stats["write"]+=1
     rc=db["services"].insert_one({"service":service,"url":url})
     return rc.acknowledged
 
@@ -129,6 +134,7 @@ def add_url(url:str,service:str="",prefix="",duration=0) -> str:
     if len(service)>0 and db["services"].find_one({"service":service}) is None:
       raise RuntimeError(f"Service {service} inconnu")
 
+    stats["write"]+=1
     now=int(datetime.datetime.now().timestamp())
     data={"cid":cid,"url":url,"service":service,"dtCreate":now,"duration":duration}
     db["links"].insert_one(data)

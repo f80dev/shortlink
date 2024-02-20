@@ -52,10 +52,13 @@ def ap_get(cid=""):
     if cid=="favicon.ico": return jsonify({"message":"ok"})
 
     url=get_url(cid)
-    if type(url)==dict and "redirect" in url:
-      r=url["redirect"]
-      del url["redirect"]
+    if type(url)==dict and "url" in url:
+
+      r=url["url"]
+      del url["url"]
       if not r.startswith("http"):r="https://"+r
+      logging.info("Fabrication de l'url sur la base de l'objet stocké à la place de l'url")
+      #TODO ajouter un système d'encryptage passé dans l'objet
       url=r+"/?p="+str(base64.b64encode(bytes(dumps(url),"utf8")),"utf8")
       logging.log(logging.INFO, "Transfert vers " + url)
 
