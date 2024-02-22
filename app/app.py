@@ -8,7 +8,7 @@ from json import dump, dumps
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 
-from tools import get_url, add_url, _all, get_services
+from tools import get_url, add_url, _all, get_services, stats
 
 app = Flask(__name__)
 CORS(app)
@@ -17,7 +17,7 @@ CORS(app)
 @app.route("/api/admin/", methods=["GET"])
 def admin_api():
   """
-  test : http://x.f80.fr/api/admin/
+  test : http://t.f80.fr/api/admin/
   test: http://ipb2hoaif5bd77av6sahov5l2k.ingress.europlots.com/api/admin/
   test: http://127.0.0.1:5000/api/admin/
   test: https://192.168.1.62/api/admin/   dans ce cas le port exposé est 443
@@ -33,10 +33,11 @@ def info_api():
   """
   test: http://127.0.0.1:5000/api/infos/
   test: https://192.168.1.62/api/infos/   dans ce cas le port exposé est 443
+  test: https://api.f80.fr/api/infos/   dans ce cas le port exposé est 443
 
   :return:
   """
-  return jsonify({"message":"ok"})
+  return jsonify({"statistiques":stats})
 
 
 @app.route("/api/services/", methods=["GET"])

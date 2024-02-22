@@ -2,15 +2,29 @@ from json import dumps
 from time import sleep
 
 from app import add_url, get_url, app
-from tools import del_service, add_service, delete, find, _all
+from tools import del_service, add_service, delete, find, _all, get_services
 
 
 def test_load_services():
-  add_service("")
+  add_service("servicetest","http://xgate.nfluent.io/?p=hjhfjdshjkfshdjkfhdsjkhfd&url={url}")
+  services=get_services()
+  assert len(services)>0
+  del_service("servicetest")
 
 def test_add_service():
   del_service("nftcheck")
   assert add_service("nftcheck","https://gate.nfluent.io/?url={url}")
+
+
+def test_add_json():
+  body={
+    "url":"https://liberation.fr/",
+    "p1":"10",
+    "p2":20
+  }
+  cid=add_url(body)
+  url=get_url(cid,format="url")
+  assert url.startswith(body["url"])
 
 
 def test_add_same_url():
@@ -94,3 +108,5 @@ def test_api_get_url_in_timeout(url="https://nfluent.io",duration=1):
   sleep(62.0)
   response=app.test_client().get("/"+cid+"?format=text",headers={'Content-Type': "application/json"})
   assert response.text==""
+
+

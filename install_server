@@ -1,0 +1,4 @@
+docker pull f80hub/shortlinks:latest
+docker ps -q --filter "name=shortlinks" | grep -q . && docker rm -f shortlinks
+docker run --restart=always --name shortlinks -p 443:443 -e PORT=443 -d f80hub/shortlinks:latest
+exit

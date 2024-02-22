@@ -1,6 +1,8 @@
 #docker build -t f80hub/shortlinks .
 #docker push f80hub/shortlinks:latest
 #docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 80:80 -p 5000:5000 -ti f80hub/shortlinks:latest
+#test sur serveur :
+#docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 443:443 -e PORT=443 -ti f80hub/shortlinks:latest
 
 FROM python:3.13.0a3-alpine3.18
 RUN apk add py3-gunicorn

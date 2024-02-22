@@ -52,7 +52,7 @@ def delete(value:str,field="cid"):
 
 
 
-def get_url(cid:str) -> str:
+def get_url(cid:str,format=None) -> str:
   data=find(cid,"cid")
 
   #Condition d'éligibilité
@@ -65,6 +65,8 @@ def get_url(cid:str) -> str:
     url=_service["url"].replace("{url}",str(base64.b64encode(bytes(data["url"],"utf8")),"utf8"))
   else:
     url=data["url"]
+
+  if format=="url" and type(url)==dict:
 
   return url
 
@@ -139,7 +141,7 @@ def add_url(url:str,service:str="",prefix="",duration=0) -> str:
     data={"cid":cid,"url":url,"service":service,"dtCreate":now,"duration":duration}
     db["links"].insert_one(data)
 
-    cache.insert(data,0)
+    cache.insert(0,data)
     if len(cache)>CACHE_SIZE: cache.remove(cache[CACHE_SIZE])       #La taille du cache se limite a CACHE_SIZE
 
   return prefix+cid
