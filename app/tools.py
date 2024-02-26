@@ -1,11 +1,16 @@
 
 import base64
 import datetime
+import hashlib
+import json
 import os
 import random
 from base64 import b64encode
 
+import yaml
 from pymongo import MongoClient
+
+from secret import TRANSFER_APP
 
 CACHE_SIZE=1000
 
@@ -56,7 +61,6 @@ def get_url(cid:str,format=None) -> str:
   data=find(cid,"cid")
 
   #Condition d'éligibilité
-  now=int(datetime.datetime.now().timestamp())
   if is_expired(data): return ""
   if data is None: return f"{cid} inconnu"
 
@@ -67,8 +71,14 @@ def get_url(cid:str,format=None) -> str:
     url=data["url"]
 
   if format=="url" and type(url)==dict:
+    u=data["url"]
+    for k in url.keys():
+      u=u+k+"="+url[k]
+    url=u
 
   return url
+
+
 
 
 def generate_cid(ntry=3000) -> str:
@@ -85,27 +95,45 @@ def generate_cid(ntry=3000) -> str:
   return ""
 
 
-def del_service(service:str):
-
-  rc=db["services"].delete_one({"service":service})
+def del_service(service_id:str):
+  if service_id=="*":
+    rc=db["services"].delete_many({})
+  else:
+    rc=db["services"].delete_one({"id":service_id})
   return rc.deleted_count>0
+
+def init_services(service_file="./static/services.yaml"):
+  with open(service_file,"r") as hFile:
+    for service in yaml.load(hFile,yaml.FullLoader)["services"]:
+      service["url"]=service["url"].replace("{{redirect_server}}",TRANSFER_APP)
+      if not db["services"].find_one({"id":service["id"]}):
+        db["services"].insert_one(service)
+
 
 def get_services():
   rc=list(db["services"].find())
   for service in rc:
     del service["_id"]
-  rc.append({"service":"Redirection simple","url":"","dtCreate":0})
+
   return rc
 
 
 
 
-def add_service(service:str,url:str):
-  _service=db["services"].find_one({"service":service})
+def add_service(service:str,url_or_dict:str or dict,id="",description=""):
+  if id=="":
+    url=url_or_dict if type(url_or_dict)==str else json.dumps(url_or_dict)
+    id=hashlib.sha256(bytes(url,'utf8')).hexdigest()
+
+  _service=db["services"].find_one({"id":id})
+
   if _service is None:
     stats["write"]+=1
-    rc=db["services"].insert_one({"service":service,"url":url})
-    return rc.acknowledged
+    body={"service":service,"url":url_or_dict,"id":id,"desc":description}
+    rc=db["services"].insert_one(body)
+    if rc.acknowledged: return body
+
+  return None     #En cas d'échec
 
 
 def is_expired(data:dict) -> bool:
@@ -114,7 +142,7 @@ def is_expired(data:dict) -> bool:
   return False
 
 
-def add_url(url:str,service:str="",prefix="",duration=0) -> str:
+def add_url(url:str,service_id:str="",prefix="",duration=0) -> str:
   """
 
   :param url:
@@ -133,12 +161,12 @@ def add_url(url:str,service:str="",prefix="",duration=0) -> str:
     if cid=="": raise RuntimeError("impossible de généré le CID")
 
   if obj is None:
-    if len(service)>0 and db["services"].find_one({"service":service}) is None:
-      raise RuntimeError(f"Service {service} inconnu")
+    if len(service_id)>0 and db["services"].find_one({"id":service_id}) is None:
+      raise RuntimeError(f"Service {service_id} inconnu")
 
     stats["write"]+=1
     now=int(datetime.datetime.now().timestamp())
-    data={"cid":cid,"url":url,"service":service,"dtCreate":now,"duration":duration}
+    data={"cid":cid,"url":url,"service":service_id,"dtCreate":now,"duration":duration}
     db["links"].insert_one(data)
 
     cache.insert(0,data)

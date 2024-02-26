@@ -49,14 +49,19 @@ def services_api():
 @app.route("/t<cid>", methods=["GET"])
 @app.route("/api/add/", methods=["POST"])
 def ap_get(cid=""):
+  """
+  test avec : http://localhost:80/tAkSSHp4=
+  :param cid:
+  :return:
+  """
   if request.method == "GET":
     if cid=="favicon.ico": return jsonify({"message":"ok"})
 
     url=get_url(cid)
-    if type(url)==dict and "url" in url:
+    if type(url)==dict and "redirect" in url:
 
-      r=url["url"]
-      del url["url"]
+      r=url["redirect"]
+      del url["redirect"]
       if not r.startswith("http"):r="https://"+r
       logging.info("Fabrication de l'url sur la base de l'objet stocké à la place de l'url")
       #TODO ajouter un système d'encryptage passé dans l'objet

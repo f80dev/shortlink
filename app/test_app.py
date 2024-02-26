@@ -2,11 +2,17 @@ from json import dumps
 from time import sleep
 
 from app import add_url, get_url, app
-from tools import del_service, add_service, delete, find, _all, get_services
+from tools import del_service, add_service, delete, find, _all, get_services, init_services
 
+
+def test_init_services():
+  del_service("redirect")
+  init_services()
+  services=get_services()
+  assert len(services)>0
 
 def test_load_services():
-  add_service("servicetest","http://xgate.nfluent.io/?p=hjhfjdshjkfshdjkfhdsjkhfd&url={url}")
+  add_service("gate","http://xgate.nfluent.io/?p=hjhfjdshjkfshdjkfhdsjkhfd&url={url}")
   services=get_services()
   assert len(services)>0
   del_service("servicetest")
@@ -14,7 +20,37 @@ def test_load_services():
 def test_add_service():
   del_service("nftcheck")
   assert add_service("nftcheck","https://gate.nfluent.io/?url={url}")
+  del_service("nftcheck")
 
+
+def test_add_service_2(id="xgate"):
+  false=False
+  true=True
+  del_service(id)
+  body={"redirect":"lemonde.fr",
+        "connexion":{"private_key":false,"keystore":false,"address":false,"direct_connect":false,"email":false,"extension_wallet":true,"google":false,"nfluent_wallet_connect":false,"on_device":false,"wallet_connect":true,"web_wallet":true,"webcam":false},
+        "messages":{
+          "intro":"L'accès a ce contenu est limité",
+          "fail":"Impossible de continuez sans le NFT ou le paiement requis",
+          "success":"Eligibilité vérifiée. Vous pouvez rejoindre le site"
+        },
+        "required":1,
+        "network":"elrond-devnet",
+        "store":"",
+        "style":"color:white;background-color: #53576EFF;","bank":"",
+        "price":"0.1",
+        "merchant":{
+          "contact":"",
+          "country":"",
+          "currency":"",
+          "id":"",
+          "name":"",
+          "wallet":{"address":"erd1spyavw0956vq68xj8y4tenjpq2wd5a9p2c6j8gsz7ztyrnpxrruqzu66jx",
+                    "token":"XEGLD-78ebc6","unity":"xEGLD","network":"elrond-devnet"}
+        }
+      }
+  rc=add_service("xGate",body,id,"Facturer un acces")
+  assert rc
 
 def test_add_json():
   body={
@@ -24,7 +60,8 @@ def test_add_json():
   }
   cid=add_url(body)
   url=get_url(cid,format="url")
-  assert url.startswith(body["url"])
+  assert type(url)==dict
+  assert "url" in url
 
 
 def test_add_same_url():
