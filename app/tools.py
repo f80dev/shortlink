@@ -1,6 +1,7 @@
 
 import base64
 import datetime
+import json
 import os
 import random
 from base64 import b64encode
@@ -8,6 +9,7 @@ from base64 import b64encode
 from pymongo import MongoClient
 
 CACHE_SIZE=1000
+REDIRECT_NAME="url"
 
 #valeurs possibles
 #  - mongodb://root:hh4271@38.242.210.208:27017/?tls=false
@@ -52,21 +54,25 @@ def delete(value:str,field="cid"):
 
 
 
-def get_url(cid:str,format=None) -> str:
-  data=find(cid,"cid")
+def get_url(cid:str) -> str:
+  data=find(cid,"cid")  #récupere la donnée associée au cid
 
   #Condition d'éligibilité
-  now=int(datetime.datetime.now().timestamp())
   if is_expired(data): return ""
   if data is None: return f"{cid} inconnu"
 
   if data["service"]!="":
+    #On doit appliquer un service a l'url
     _service=db["services"].find_one({"service":data["service"]})
     url=_service["url"].replace("{url}",str(base64.b64encode(bytes(data["url"],"utf8")),"utf8"))
   else:
     url=data["url"]
 
-  if format=="url" and type(url)==dict:
+  if  type(url)==dict:
+    #l'url récupérer est un dictionnaire il faut donc récupérer l'url de redirection dans le dictionnaire et créer le lien avec les autres parametres
+    u=url[REDIRECT_NAME]
+    del url[REDIRECT_NAME]
+    url=u+"?p="+str(base64.b64encode(bytes(json.dumps(url),"utf8")),"utf8")
 
   return url
 
@@ -114,7 +120,7 @@ def is_expired(data:dict) -> bool:
   return False
 
 
-def add_url(url:str,service:str="",prefix="",duration=0) -> str:
+def add_url(url:str or dict,service:str="",prefix="",duration=0) -> str:
   """
 
   :param url:

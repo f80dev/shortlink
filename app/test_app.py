@@ -2,7 +2,12 @@ from json import dumps
 from time import sleep
 
 from app import add_url, get_url, app
-from tools import del_service, add_service, delete, find, _all, get_services
+from tools import del_service, add_service, delete, find, _all, get_services, REDIRECT_NAME
+
+headers = {
+  'Content-Type': "application/json",
+  'Accept': "application/json"
+}
 
 
 def test_load_services():
@@ -17,14 +22,14 @@ def test_add_service():
 
 
 def test_add_json():
-  body={
-    "url":"https://liberation.fr/",
+  body:dict={
+    REDIRECT_NAME:"https://liberation.fr/",
     "p1":"10",
     "p2":20
   }
   cid=add_url(body)
-  url=get_url(cid,format="url")
-  assert url.startswith(body["url"])
+  url=get_url(cid)
+  assert url.startswith(body[REDIRECT_NAME])
 
 
 def test_add_same_url():
@@ -85,28 +90,33 @@ def test_get_url_with_service(url="https://nfluent.io"):
 
 
 def test_api_add_url(url="https://liberation.fr",duration=0):
-  headers = {
-    'Content-Type': "application/json",
-    'Accept': "application/json"
-  }
-
   data={"url":url,"duration":duration}
   response=app.test_client().post("/api/add/",data=dumps(data),headers=headers)
-
   assert len(response.text)>0
   return response.text
 
 
+
+def test_api_get_url_with_parameters(url="https://liberation.fr",duration=0,params="param1=1&param2=2"):
+  data={"url":url,"duration":duration}
+  result=app.test_client().post("/api/add/",data=dumps(data),headers=headers)
+  cid=result.json["cid"]
+  url_recup=app.test_client().get("/"+cid+"?"+params+"&format=text")
+  assert params in url_recup.text
+
+
+
+
 def test_api_get_url(url="https://lemonde.fr"):
-  cid=test_api_add_url(url=url)
-  response=app.test_client().get("/"+cid+"?format=text",headers={'Content-Type': "application/json"})
+  cid=add_url(url=url)
+  response=app.test_client().get("/"+cid,headers=headers)
   assert response.text==url
 
 
+
+
 def test_api_get_url_in_timeout(url="https://nfluent.io",duration=1):
-  cid=test_api_add_url(url=url,duration=duration)
-  sleep(62.0)
-  response=app.test_client().get("/"+cid+"?format=text",headers={'Content-Type': "application/json"})
+  cid=test_api_add_url(url=url,duration=duration/60)
+  sleep(duration/60+3)
+  response=app.test_client().get("/"+cid+"?format=text",headers=headers)
   assert response.text==""
-
-

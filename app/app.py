@@ -4,6 +4,7 @@ import os
 import ssl
 import sys
 from json import dump, dumps
+from urllib.parse import urlparse
 
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
@@ -49,27 +50,23 @@ def services_api():
 @app.route("/t<cid>", methods=["GET"])
 @app.route("/api/add/", methods=["POST"])
 def ap_get(cid=""):
+  """
+  Lecture de url raccourcis
+  :param cid:
+  :return: retourne les parametres stocké ou une redirection si les parametres stockés sont un object contenant redirect ou sont une url
+  """
   if request.method == "GET":
     if cid=="favicon.ico": return jsonify({"message":"ok"})
-
     url=get_url(cid)
-    if type(url)==dict and "url" in url:
-
-      r=url["url"]
-      del url["url"]
-      if not r.startswith("http"):r="https://"+r
-      logging.info("Fabrication de l'url sur la base de l'objet stocké à la place de l'url")
-      #TODO ajouter un système d'encryptage passé dans l'objet
-      url=r+"/?p="+str(base64.b64encode(bytes(dumps(url),"utf8")),"utf8")
-      logging.log(logging.INFO, "Transfert vers " + url)
 
     format=request.args.get("format","redirect") if type(url)==str else "json"
     if format=="json": return jsonify({"url":url} if len(url)>0 else {"Error":f"{cid} introuvable"})
+
+    url=url + "?"+str(request.query_string,'utf8')
     if format=="text": return url
     return redirect(url)
 
-  elif request.method == "POST":
-
+  if request.method == "POST":
     #récupration des parametres
     url=request.json["url"]
     duration=request.json["duration"] if "duration" in request.json else 0
