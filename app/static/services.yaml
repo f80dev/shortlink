@@ -1,0 +1,19 @@
+title: Services utilisables par linKut
+desc: ""
+
+services:
+  - service: Redirection
+    id: redirect
+    url: ""
+    description: Redirection simple
+
+  - service: Preuve d'humanité
+    id: POH
+    url: "{{redirect_serveur}}/?redirect={{redirect}}&humanity=true"
+    description: Redirection simple
+
+  - service: Authentification par wallet
+    id: authent
+    url: "{{redirect_serveur}}/?redirect={{redirect}}&authent=true"
+    description: Redirection simple
+

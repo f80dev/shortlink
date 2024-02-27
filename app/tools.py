@@ -1,12 +1,17 @@
 
 import base64
 import datetime
+import hashlib
 import json
 import os
 import random
 from base64 import b64encode
+from urllib import parse
 
+import yaml
 from pymongo import MongoClient
+
+from secret import TRANSFER_APP
 
 CACHE_SIZE=1000
 REDIRECT_NAME="url"
@@ -44,37 +49,69 @@ def _all(limit=2000):
   return rc
 
 def delete(value:str,field="cid"):
-  for c in cache:
-    if c[field]==value: cache.remove(c)
+  if value=="*":
+    rc=db["links"].delete_many({})
+    cache.clear()
+    return True
 
-  stats["write"]+=1
-  rc=db["links"].delete_one({field:value})
-  return rc.deleted_count==1
+  else:
+    for c in cache:
+      if c[field]==value: cache.remove(c)
+
+    stats["write"]+=1
+    rc=db["links"].delete_one({field:value})
+    return rc.deleted_count==1
 
 
+
+
+def appply_values_on_service(service:dict,values:dict):
+  for k in values.keys():
+    for j in service.keys():
+      if type(service[j])==dict:
+        service[j]=appply_values_on_service(service[j],values)
+      if k==j:
+        service[j]=values[k]
+  return service
+
+
+def convert_dict_to_url(obj:dict,key_domain=REDIRECT_NAME,convert_mode="base64") -> str:
+  if not key_domain in obj:raise RuntimeError("Le champs "+key_domain+" n'est pas présent dans l'objet")
+
+  obj=obj.copy()
+  domain=obj[key_domain]
+  del obj[key_domain]
+  if convert_mode=="base64":
+    params=["p="+str(base64.b64encode(bytes(json.dumps(obj),"utf8")),"utf8")]
+  else:
+    params=[k+"="+parse.quote(str(obj[k]), safe="/",encoding=None, errors=None) for k in obj.keys()]
+  return domain+("?" if len(params)>0 else "")+"&".join(params)
 
 
 def get_url(cid:str) -> str:
-  data=find(cid,"cid")  #récupere la donnée associée au cid
+  data=find(cid,"cid")
 
   #Condition d'éligibilité
   if is_expired(data): return ""
   if data is None: return f"{cid} inconnu"
 
+  if not "values" in data:data["values"]=dict()
+  data["values"]["url"]=data["url"]
+
   if data["service"]!="":
-    #On doit appliquer un service a l'url
-    _service=db["services"].find_one({"service":data["service"]})
-    url=_service["url"].replace("{url}",str(base64.b64encode(bytes(data["url"],"utf8")),"utf8"))
+    data["service"]=db["services"].find_one({"id":data["service"]})
+    if data["service"] is None: raise RuntimeError("Service inexistant")
+    data["service"]=appply_values_on_service(data["service"]["data"],data["values"] if "values" in data else {})
+    url=convert_dict_to_url(data["service"],key_domain="domain")
   else:
     url=data["url"]
 
-  if  type(url)==dict:
-    #l'url récupérer est un dictionnaire il faut donc récupérer l'url de redirection dans le dictionnaire et créer le lien avec les autres parametres
-    u=url[REDIRECT_NAME]
-    del url[REDIRECT_NAME]
-    url=u+"?p="+str(base64.b64encode(bytes(json.dumps(url),"utf8")),"utf8")
+  if type(url)==dict:
+    url=convert_dict_to_url(url)
 
   return url
+
+
 
 
 def generate_cid(ntry=3000) -> str:
@@ -91,27 +128,48 @@ def generate_cid(ntry=3000) -> str:
   return ""
 
 
-def del_service(service:str):
-
-  rc=db["services"].delete_one({"service":service})
+def del_service(service_id:str):
+  if service_id=="*":
+    rc=db["services"].delete_many({})
+  else:
+    rc=db["services"].delete_one({"id":service_id})
   return rc.deleted_count>0
+
+
+
+def init_services(service_file="./static/services.yaml"):
+  with open(service_file,"r") as hFile:
+    for service in yaml.load(hFile,yaml.FullLoader)["services"]:
+      service["url"]=service["url"].replace("{{redirect_server}}",TRANSFER_APP)
+      if not db["services"].find_one({"id":service["id"]}):
+        db["services"].insert_one(service)
+
 
 def get_services():
   rc=list(db["services"].find())
   for service in rc:
     del service["_id"]
-  rc.append({"service":"Redirection simple","url":"","dtCreate":0})
+
   return rc
 
 
 
 
-def add_service(service:str,url:str):
-  _service=db["services"].find_one({"service":service})
+def add_service(service:str,data:dict,id="",description=""):
+  if not "domain" in data: raise RuntimeError("Le service doit contenir un domain")
+
+  if id=="":
+    id=hashlib.sha256(bytes(json.dumps(data),'utf8')).hexdigest()
+
+  _service=db["services"].find_one({"id":id})
+
   if _service is None:
     stats["write"]+=1
-    rc=db["services"].insert_one({"service":service,"url":url})
-    return rc.acknowledged
+    body={"service":service,"data":data,"id":id,"desc":description}
+    rc=db["services"].insert_one(body)
+    if rc.acknowledged: return body
+
+  return None     #En cas d'échec
 
 
 def is_expired(data:dict) -> bool:
@@ -120,7 +178,7 @@ def is_expired(data:dict) -> bool:
   return False
 
 
-def add_url(url:str or dict,service:str="",prefix="",duration=0) -> str:
+def add_url(url:str,service_id:str="",values:dict=dict(),prefix="",duration=0) -> str:
   """
 
   :param url:
@@ -139,12 +197,12 @@ def add_url(url:str or dict,service:str="",prefix="",duration=0) -> str:
     if cid=="": raise RuntimeError("impossible de généré le CID")
 
   if obj is None:
-    if len(service)>0 and db["services"].find_one({"service":service}) is None:
-      raise RuntimeError(f"Service {service} inconnu")
+    if len(service_id)>0 and db["services"].find_one({"id":service_id}) is None:
+      raise RuntimeError(f"Service {service_id} inconnu")
 
     stats["write"]+=1
     now=int(datetime.datetime.now().timestamp())
-    data={"cid":cid,"url":url,"service":service,"dtCreate":now,"duration":duration}
+    data={"cid":cid,"url":url,"service":service_id,"dtCreate":now,"duration":duration,"values":values}
     db["links"].insert_one(data)
 
     cache.insert(0,data)

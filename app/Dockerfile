@@ -26,7 +26,10 @@ RUN pip3 install -v gunicorn
 #COPY requirements.txt .
 #RUN pip3 install -r requirements.txt
 
+RUN mkdir static
+
 COPY *.py .
+COPY ./static/* /static
 COPY f80.fr_ssl_certificate.cer ./cert.pem
 COPY _.f80.fr_private_key.pem ./key.pem
 

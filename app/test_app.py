@@ -2,34 +2,79 @@ from json import dumps
 from time import sleep
 
 from app import add_url, get_url, app
-from tools import del_service, add_service, delete, find, _all, get_services, REDIRECT_NAME
+from secret import TRANSFER_APP
+from tools import del_service, add_service, delete, find, _all, get_services, init_services, convert_dict_to_url
 
 headers = {
   'Content-Type': "application/json",
   'Accept': "application/json"
 }
 
+REPLACE_VALUES={
+  "address":"@herve",
+  "token":"NFLUCOIN",
+  "quantity":5
+}
+GATE_SERVICE="gate"
 
-def test_load_services():
-  add_service("servicetest","http://xgate.nfluent.io/?p=hjhfjdshjkfshdjkfhdsjkhfd&url={url}")
+def test_raz():
+  del_service("*")
+  delete("*")
+
+def test_convert_dict_to_url():
+  d={"url":"http://lemonde.fr","p1":"v1","p2":"v2"}
+  url=convert_dict_to_url(d)
+  assert url==d["url"]+"?p1=v1&p2=v2"
+
+
+def test_init_services():
+  del_service("redirect")
+  init_services()
   services=get_services()
   assert len(services)>0
-  del_service("servicetest")
 
-def test_add_service():
-  del_service("nftcheck")
-  assert add_service("nftcheck","https://gate.nfluent.io/?url={url}")
+def test_load_services(id="servicetest"):
+  add_service("gate",{"domain":TRANSFER_APP},id)
+  services=get_services()
+  assert len(services)>0
+  del_service(id)
 
+def test_add_service(id="nftcheck"):
+  del_service(id)
+  assert add_service("nftcheck",{"domain":"https://gate.nfluent.io/"},id)
+  del_service(id)
+
+
+def test_add_service_2(id=GATE_SERVICE):
+  false=False
+  true=True
+  del_service(id)
+  body={"url":"lemonde.fr",
+        "domain":TRANSFER_APP,
+        "intro":"L'accès a ce contenu est limité",
+        "fail":"Impossible de continuez sans le NFT ou le paiement requis",
+        "success":"Eligibilité vérifiée. Vous pouvez rejoindre le site",
+        "required":1,
+        "network":"elrond-devnet",
+        "store":"",
+        "style":"color:white;background-color: #53576EFF;","bank":"",
+        "price":"0.1",
+        "address":"erd1spyavw0956vq68xj8y4tenjpq2wd5a9p2c6j8gsz7ztyrnpxrruqzu66jx",
+        "token":"XEGLD-78ebc6",
+        "unity":"xEGLD"
+      }
+  rc=add_service("xGate",body,id,"Facturer un acces")
+  assert rc
 
 def test_add_json():
-  body:dict={
-    REDIRECT_NAME:"https://liberation.fr/",
+  body={
+    "url":"https://liberation.fr/",
     "p1":"10",
     "p2":20
   }
   cid=add_url(body)
   url=get_url(cid)
-  assert url.startswith(body[REDIRECT_NAME])
+  assert url.startswith(body["url"])
 
 
 def test_add_same_url():
@@ -72,10 +117,22 @@ def test_add_url_without_service(url="https://liberation.fr"):
 
 
 
-def test_add_url_with_service(url="https://lemonde.fr",service="nftcheck"):
-  cid=add_url(url=url,service=service)
+def test_add_url_with_service(url="https://lemonde.fr",service=GATE_SERVICE):
+  cid=add_url(url=url,service_id=service)
   assert len(cid)>0
   return cid
+
+
+def test_add_url_with_service_and_values(url="https://leparisien.fr",service=GATE_SERVICE,values=REPLACE_VALUES):
+  cid=add_url(url=url,service_id=service,values=values)
+  assert len(cid)>0
+
+  url=get_url(cid)
+  for k in values.keys():     #On vérifie que toutes les valeurs sont présentes dans le résultat
+    assert values[k] in url
+
+  return cid
+
 
 
 
@@ -89,34 +146,27 @@ def test_get_url_with_service(url="https://nfluent.io"):
 
 
 
-def test_api_add_url(url="https://liberation.fr",duration=0):
-  data={"url":url,"duration":duration}
+def test_api_add_url(url="https://liberation.fr",duration=0,values=REPLACE_VALUES,id=GATE_SERVICE):
+  data={"url":url,"duration":duration,"values":values,"service":id}
   response=app.test_client().post("/api/add/",data=dumps(data),headers=headers)
+
   assert len(response.text)>0
+
+  url=get_url(response.text)
+
   return response.text
 
 
-
-def test_api_get_url_with_parameters(url="https://liberation.fr",duration=0,params="param1=1&param2=2"):
-  data={"url":url,"duration":duration}
-  result=app.test_client().post("/api/add/",data=dumps(data),headers=headers)
-  cid=result.json["cid"]
-  url_recup=app.test_client().get("/"+cid+"?"+params+"&format=text")
-  assert params in url_recup.text
-
-
-
-
 def test_api_get_url(url="https://lemonde.fr"):
-  cid=add_url(url=url)
+  cid=test_api_add_url(url=url)
   response=app.test_client().get("/"+cid,headers=headers)
   assert response.text==url
 
 
-
-
 def test_api_get_url_in_timeout(url="https://nfluent.io",duration=1):
-  cid=test_api_add_url(url=url,duration=duration/60)
-  sleep(duration/60+3)
-  response=app.test_client().get("/"+cid+"?format=text",headers=headers)
+  cid=test_api_add_url(url=url,duration=duration/10)
+  sleep(62.0/10)
+  response=app.test_client().get("/"+cid,headers=headers)
   assert response.text==""
+
+
