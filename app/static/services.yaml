@@ -4,16 +4,21 @@ desc: ""
 services:
   - service: Redirection
     id: redirect
-    url: ""
+    data:
+      domain: ""
     description: Redirection simple
 
   - service: Preuve d'humanité
     id: POH
-    url: "{{redirect_serveur}}/?redirect={{redirect}}&humanity=true"
+    data:
+      humanity: True
+      domain: https://api.f80.fr/transfer
     description: Redirection simple
 
   - service: Authentification par wallet
     id: authent
-    url: "{{redirect_serveur}}/?redirect={{redirect}}&authent=true"
+    data:
+      authent: True
+      domain: https://api.f80.fr/transfer
     description: Redirection simple
 
