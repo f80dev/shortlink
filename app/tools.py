@@ -3,6 +3,7 @@ import base64
 import datetime
 import hashlib
 import json
+import logging
 import os
 import random
 from base64 import b64encode
@@ -82,25 +83,31 @@ def convert_dict_to_url(obj:dict,key_domain=REDIRECT_NAME,convert_mode="base64")
   domain=obj[key_domain]
   del obj[key_domain]
   if convert_mode=="base64":
-    params=["p="+str(base64.b64encode(bytes(json.dumps(obj),"utf8")),"utf8")]
+    params=["b="+parse.quote(str(base64.b64encode(bytes(json.dumps(obj),"utf8")),"utf8"))]
   else:
     params=[k+"="+parse.quote(str(obj[k]), safe="/",encoding=None, errors=None) for k in obj.keys()]
-  return domain+("?" if len(params)>0 else "")+"&".join(params)
+  rc=domain+("?" if len(params)>0 else "")+"&".join(params)
+  return rc
+
 
 
 def get_url(cid:str) -> str:
   data=find(cid,"cid")
 
   #Condition d'éligibilité
-  if is_expired(data): return ""
-  if data is None: return f"{cid} inconnu"
+  if data is None:
+    logging.ERROR(f"{cid} inconnu")
+    return None
+
+  if is_expired(data):
+    return None
 
   if not "values" in data:data["values"]=dict()
   data["values"]["url"]=data["url"]
 
-  if data["service"]!="":
+  if data["service"] and data["service"]!="":
     data["service"]=db["services"].find_one({"id":data["service"]})
-    if data["service"] is None: raise RuntimeError("Service inexistant")
+    if data["service"] is None: raise RuntimeError(f"Service {data['service']} inexistant")
     data["service"]=appply_values_on_service(data["service"]["data"],data["values"] if "values" in data else {})
     url=convert_dict_to_url(data["service"],key_domain="domain")
   else:
@@ -138,11 +145,13 @@ def del_service(service_id:str):
 
 
 def init_services(service_file="./static/services.yaml"):
+  del_service("*")
   with open(service_file,"r") as hFile:
     for service in yaml.load(hFile,yaml.FullLoader)["services"]:
-      service["url"]=service["url"].replace("{{redirect_server}}",TRANSFER_APP)
+      if not "domain" in service["data"]:service["data"]["domain"]=TRANSFER_APP
       if not db["services"].find_one({"id":service["id"]}):
-        db["services"].insert_one(service)
+        service["data"]["url"]=""
+        add_service(service["service"],service["data"],service["id"],service["description"])
 
 
 def get_services():
@@ -185,7 +194,7 @@ def add_url(url:str,service_id:str="",values:dict=dict(),prefix="",duration=0) -
   :return:
   """
   cid=None
-  obj=find(url,"url")
+  obj=db["links"].find_one({"url":url,"service":service_id})
   if obj:
     if is_expired(obj):
       delete(url,"url")

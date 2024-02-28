@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 
-from tools import get_url, add_url, _all, get_services, stats
+from tools import get_url, add_url, _all, get_services, stats, init_services
 
 app = Flask(__name__)
 CORS(app)
@@ -43,7 +43,11 @@ def info_api():
 
 @app.route("/api/services/", methods=["GET"])
 def services_api():
-    return jsonify(get_services())
+  """
+  test: http://127.0.0.1:80/api/services/
+  :return:
+  """
+  return jsonify(get_services())
 
 
 
@@ -56,13 +60,14 @@ def ap_get(cid=""):
   :return: retourne les parametres stocké ou une redirection si les parametres stockés sont un object contenant redirect ou sont une url
   """
   if request.method == "GET":
+    #test http://localhost:80/tr1uHIQ==
     if cid=="favicon.ico": return jsonify({"message":"ok"})
     url=get_url(cid)
 
     format=request.args.get("format","redirect") if type(url)==str else "json"
     if format=="json": return jsonify({"url":url} if len(url)>0 else {"Error":f"{cid} introuvable"})
 
-    url=url + "?"+str(request.query_string,'utf8')
+    url=url + ("?"+str(request.query_string,'utf8') if str(request.query_string,"utf8")!='' else "")
     if format=="text": return url
     return redirect(url)
 
@@ -81,6 +86,7 @@ def ap_get(cid=""):
 
 if __name__ == "__main__":
   port=(os.environ["PORT"] if "PORT" in os.environ else None) or (sys.argv[1] if len(sys.argv)>1 and sys.argv[1].isdigit() else None) or "8080"
+  init_services()
   if "ssl" in sys.argv:
     context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     #voir https://docs.python.org/3/library/ssl.html#ssl.SSLContext

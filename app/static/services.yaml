@@ -8,17 +8,21 @@ services:
       domain: ""
     description: Redirection simple
 
-  - service: Preuve d'humanité
-    id: POH
+  - service: Preuve d'humanitee
+    id: poh
     data:
       humanity: True
-      domain: https://api.f80.fr/transfer
-    description: Redirection simple
+      domain: https://gate.nfluent.io/transfer
+      message: Pour continuez, veuillez cliquer
+
+    description: Vérifie que l'internaute n'est pas un robot
 
   - service: Authentification par wallet
     id: authent
     data:
       authent: True
-      domain: https://api.f80.fr/transfer
-    description: Redirection simple
+      domain: https://gate.nfluent.io/transfer
+      message: Pour continuez, veuillez connecter votre wallet
+
+    description: Identification du wallet MvX
 

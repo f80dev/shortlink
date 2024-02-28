@@ -1,3 +1,5 @@
+import base64
+import json
 from json import dumps
 from time import sleep
 
@@ -15,20 +17,20 @@ REPLACE_VALUES={
   "token":"NFLUCOIN",
   "quantity":5
 }
-GATE_SERVICE="gate"
+GATE_SERVICE="poh"
 
-def test_raz():
-  del_service("*")
-  delete("*")
 
 def test_convert_dict_to_url():
   d={"url":"http://lemonde.fr","p1":"v1","p2":"v2"}
   url=convert_dict_to_url(d)
   assert url==d["url"]+"?p1=v1&p2=v2"
 
+def test_raz():
+  del_service("*")
+  delete("*")
+
 
 def test_init_services():
-  del_service("redirect")
   init_services()
   services=get_services()
   assert len(services)>0
@@ -139,28 +141,30 @@ def test_add_url_with_service_and_values(url="https://leparisien.fr",service=GAT
 
 def test_get_url_with_service(url="https://nfluent.io"):
   test_add_service()
-  cid=test_add_url_with_service(url,"nftcheck")
-  result=get_url(cid)
-  assert len(result)>0
+  cid=test_add_url_with_service(url,GATE_SERVICE)
+  url=get_url(cid)
+  assert len(url)>0
+  assert url.startswith(TRANSFER_APP)
+  # obj=json.loads(base64.b64decode(url.split("b=")[1]))
+  # assert "message" in obj
+  # assert "domain" in obj
+  return url
 
 
 
 
-def test_api_add_url(url="https://liberation.fr",duration=0,values=REPLACE_VALUES,id=GATE_SERVICE):
+def test_api_add_url(url="https://liberation.fr",duration=0,values=REPLACE_VALUES,id=GATE_SERVICE) -> str:
   data={"url":url,"duration":duration,"values":values,"service":id}
   response=app.test_client().post("/api/add/",data=dumps(data),headers=headers)
 
   assert len(response.text)>0
 
-  url=get_url(response.text)
+  cid=response.json["cid"]
+  url=get_url(cid[1:])
+  assert len(url)>0
+  return cid
 
-  return response.text
 
-
-def test_api_get_url(url="https://lemonde.fr"):
-  cid=test_api_add_url(url=url)
-  response=app.test_client().get("/"+cid,headers=headers)
-  assert response.text==url
 
 
 def test_api_get_url_in_timeout(url="https://nfluent.io",duration=1):
@@ -170,3 +174,8 @@ def test_api_get_url_in_timeout(url="https://nfluent.io",duration=1):
   assert response.text==""
 
 
+def test_api_get_url(url="https://lemonde.fr"):
+  cid=test_api_add_url(url=url)
+  response=app.test_client().get("/"+cid,headers=headers)
+  assert response.status=="302 FOUND"
+  return cid
