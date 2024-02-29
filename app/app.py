@@ -78,7 +78,7 @@ def ap_get(cid=""):
     service=request.json["service"] if "service" in request.json else ""
 
     logging.info(f"Création d'un lien {url} pour le service {service} avec une durée de validité de {duration}")
-    data=add_url(url,service,prefix="t",duration=duration)
+    data=add_url(url,service,prefix="t",duration=duration,values=request.json["values"])
     return jsonify({"cid":data})
 
 
