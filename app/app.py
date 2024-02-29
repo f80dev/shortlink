@@ -85,8 +85,10 @@ def ap_get(cid=""):
 
 
 if __name__ == "__main__":
-  port=(os.environ["PORT"] if "PORT" in os.environ else None) or (sys.argv[1] if len(sys.argv)>1 and sys.argv[1].isdigit() else None) or "8080"
+  port=(os.environ["PORT"] if "PORT" in os.environ else None) or (sys.argv[1] if len(sys.argv)>1 and sys.argv[1].isdigit() else None) or "80"
   init_services()
+  for service in get_services():
+    logging.info(service['service']+" disponible")
   if "ssl" in sys.argv:
     context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     #voir https://docs.python.org/3/library/ssl.html#ssl.SSLContext

@@ -12,7 +12,7 @@ from urllib import parse
 import yaml
 from pymongo import MongoClient
 
-from secret import TRANSFER_APP
+from secret import TRANSFER_APP, DBPATH
 
 CACHE_SIZE=1000
 REDIRECT_NAME="url"
@@ -20,11 +20,17 @@ REDIRECT_NAME="url"
 #valeurs possibles
 #  - mongodb://root:hh4271@38.242.210.208:27017/?tls=false
 #  - mongodb+srv://Hhoareau:hh4271@cluster0.mr2j9.mongodb.net/?retryWrites=true&w=majority
+# mongodb+srv://hhoareau:hh4271@cluster0.fsd0zro.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
-dbpath=os.environ["DBPATH"] if "DBPATH" in os.environ else "mongodb+srv://Hhoareau:hh4271@cluster0.mr2j9.mongodb.net/?retryWrites=true&w=majority"
+logging.basicConfig(level=logging.INFO)
+
+key=os.environ["DBPATH"] if "DBPATH" in os.environ else "cloud"
+dbpath=DBPATH[key] if key in DBPATH else key
 dbname=os.environ["DBNAME"] if "DBNAME" in os.environ else "shortlinks"
 db = MongoClient(dbpath)[dbname]
-#db = MongoClient("mongodb://root:hh4271@38.242.210.208:27017/?tls=false")["shortlinks"]
+
+
+logging.info(f"Connexion à la base {dbname} sur {dbpath}")
 
 cache=list()
 stats={"dtStart":datetime.datetime.now(),"read":0,"write":0}

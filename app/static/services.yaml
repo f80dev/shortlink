@@ -26,3 +26,14 @@ services:
 
     description: Identification du wallet MvX
 
+  - service: Facturer des eGld
+    id: TokenGate
+    data:
+      domain: https://gate.nfluent.io/transfer
+      message: Pour continuez, veuillez régler {{quantity}} {{token}}
+      token: egld
+      quantity: 0.01
+      address: "?"
+
+    description: L'utilisateur doit payer {{quantity}} {{token}} pour accéder au lien
+
