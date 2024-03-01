@@ -1,5 +1,10 @@
+
 title: Services utilisables par linKut
-desc: ""
+desc:
+  présnte quelques services de base utilisable avec l'application de redirection
+
+#le champs data est passé au service de redirection avec un éventuel traitement préalable
+
 
 services:
   - service: Redirection
@@ -14,7 +19,6 @@ services:
       humanity: True
       domain: https://gate.nfluent.io/transfer
       message: Pour continuez, veuillez cliquer
-
     description: Vérifie que l'internaute n'est pas un robot
 
   - service: Authentification par wallet
@@ -23,8 +27,17 @@ services:
       authent: True
       domain: https://gate.nfluent.io/transfer
       message: Pour continuez, veuillez connecter votre wallet
-
     description: Identification du wallet MvX
+
+
+  - service: Landing page
+    id: landing_page
+    data:
+      domain: https://gate.nfluent.io/transfer
+      background: "black"
+      quantity: 1
+    description: Permet d'afficher une écran, une image, une couleur pendant {{quantity}} secondes avant la redirection
+
 
   - service: Facturer des eGld
     id: TokenGate
@@ -34,6 +47,5 @@ services:
       token: egld
       quantity: 0.01
       address: "?"
-
     description: L'utilisateur doit payer {{quantity}} {{token}} pour accéder au lien
 
