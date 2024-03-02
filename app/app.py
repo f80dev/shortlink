@@ -88,7 +88,7 @@ if __name__ == "__main__":
   for service in get_services():
     logging.info("service "+service['service']+" disponible")
 
-  with_ssl=((os.environ["SSL"] if "PORT" in os.environ else "False")=="True")
+  with_ssl=((os.environ["SSL"] if "SSL" in os.environ else "False")=="True")
   if with_ssl:
     context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     #voir https://docs.python.org/3/library/ssl.html#ssl.SSLContext

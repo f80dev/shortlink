@@ -2,7 +2,7 @@
 version: "2.0"
 services:
   shortlinks:
-    image: f80hub/shortlinksv12:latest
+    image: f80hub/shortlinksv15:latest
     expose:
       - port: 443
         as: 443
@@ -12,9 +12,10 @@ services:
           - "x.f80.fr"
     env:
       - PASSWORD=oasis4271
-      - DBPATH=mongodb+srv://hhoareau:<password>@urlcutter.j7gn1jk.mongodb.net/?retryWrites=true&w=majority&appName=urlcutter
+      - DBPATH=cloud
       - DBNAME=shortlinks
       - PORT=443
+      - SSL=True
 profiles:
   compute:
     shortlinks:
