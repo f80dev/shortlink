@@ -2,8 +2,8 @@
 #docker push f80hub/shortlinks:latest
 #docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 80:80 -p 5000:5000 -ti f80hub/shortlinks:latest
 #test sur serveur :
-#docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 443:443 -e PORT=443 -ti f80hub/shortlinks:latest
-#docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 80:80 -e PORT=80 -ti f80hub/shortlinks:latest
+#docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 443:443 -e PORT=443 -e SSL=True -e DBPATH=cloud -ti f80hub/shortlinks:latest
+#docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 80:80 -e PORT=80 -e DBPATH=cloud -ti f80hub/shortlinks:latest
 
 FROM python:3.13.0a3-alpine3.18
 RUN apk add py3-gunicorn
@@ -45,5 +45,5 @@ EXPOSE 5000
 #CMD ["gunicorn", "--certfile","cert.pem","--keyfile","key.pem", "--bind", "0.0.0.0:80", "wsgi:app"]
 #CMD ["gunicorn", "--bind", "0.0.0.0:80", "wsgi:app"]
 #CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:app"]
-CMD ["python", "app.py","cloud"]
+CMD ["python", "app.py"]
 #CMD ["python", "app.py","80"]

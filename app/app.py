@@ -82,19 +82,20 @@ def ap_get(cid=""):
     return jsonify({"cid":data})
 
 
-
-
 if __name__ == "__main__":
   port=(os.environ["PORT"] if "PORT" in os.environ else None) or (sys.argv[1] if len(sys.argv)>1 and sys.argv[1].isdigit() else None) or "80"
   init_services()
   for service in get_services():
-    logging.info(service['service']+" disponible")
-  if "ssl" in sys.argv:
+    logging.info("service "+service['service']+" disponible")
+
+  with_ssl=((os.environ["SSL"] if "PORT" in os.environ else "False")=="True")
+  if with_ssl:
     context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     #voir https://docs.python.org/3/library/ssl.html#ssl.SSLContext
     #conversion https://www.sslshopper.com/assets/snippets/sslshopper/ssl-converter.php
     #context.load_cert_chain(certfile="f80.fr_ssl_certificate.cer",keyfile="_.f80.fr_private_key.pem",password="hh4271")
     context.load_cert_chain(certfile="cert.pem",keyfile="key.pem")
+    logging.info("chargement d'un contexte SSL")
     app.run(debug=False,host="0.0.0.0",port=int(port),ssl_context=context)
   else:
     logging.info("Connexion sans SSL sur port "+port)

@@ -25,6 +25,7 @@ services:
     id: authent
     data:
       authent: True
+      network: elrond-devnet
       domain: https://gate.nfluent.io/transfer
       message: Pour continuez, veuillez connecter votre wallet
     description: Identification du wallet MvX
@@ -45,7 +46,9 @@ services:
       domain: https://gate.nfluent.io/transfer
       message: Pour continuez, veuillez régler {{quantity}} {{token}}
       token: egld
+      network: elrond-devnet
       quantity: 0.01
       address: "?"
-    description: L'utilisateur doit payer {{quantity}} {{token}} pour accéder au lien
+    description: L'utilisateur doit payer {{quantity}} {{token}} sur le {{network}} pour accéder au lien {{url}}
+
 
