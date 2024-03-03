@@ -10,7 +10,7 @@ services:
   - service: Redirection
     id: redirect
     data:
-      domain: ""
+      domain: ''
     description: Redirection simple
 
   - service: Preuve d'humanitee

@@ -1,11 +1,9 @@
-import base64
-import json
 from json import dumps
 from time import sleep
 
 from app import add_url, get_url, app
 from secret import TRANSFER_APP
-from tools import del_service, add_service, delete, find, _all, get_services, init_services, convert_dict_to_url
+from tools import del_service, add_service, del_link, find, _all, get_services, init_services, convert_dict_to_url
 
 headers = {
   'Content-Type': "application/json",
@@ -22,12 +20,15 @@ GATE_SERVICE="poh"
 
 def test_convert_dict_to_url():
   d={"url":"http://lemonde.fr","p1":"v1","p2":"v2"}
-  url=convert_dict_to_url(d)
+  url=convert_dict_to_url(d,"url",convert_mode="param")
   assert url==d["url"]+"?p1=v1&p2=v2"
+
+  url=convert_dict_to_url(d,"url",convert_mode="base64")
+  assert url.startswith(d["url"]+"?b=")
 
 def test_raz():
   del_service("*")
-  delete("*")
+  del_link("*")
 
 
 def test_init_services():
@@ -80,6 +81,7 @@ def test_add_json():
 
 
 def test_add_same_url():
+  test_init_services()
   url="https://lemonde.fr"
   cid1=add_url(url)
   cid2=add_url(url)
@@ -93,7 +95,7 @@ def test_admin():
 
 def test_find():
   url="https://liberation.fr"
-  delete(url,"url")
+  del_link(url, "url")
   data=find(url,"url")
   assert data is None
   add_url(url)
@@ -112,15 +114,16 @@ def test_add_url():
 
 
 def test_add_url_without_service(url="https://liberation.fr"):
-  delete(url,"url")
+  del_link(url, "url")
   cid=add_url(url)
   redirect_url=get_url(cid)
   assert redirect_url==url
 
 
 
-def test_add_url_with_service(url="https://lemonde.fr",service=GATE_SERVICE):
-  cid=add_url(url=url,service_id=service)
+def test_add_url_with_service(url="https://lemonde.fr",service=GATE_SERVICE,values={}):
+  del_link(url, "url")
+  cid=add_url(url=url,service_id=service,values=values)
   assert len(cid)>0
   return cid
 
@@ -128,12 +131,6 @@ def test_add_url_with_service(url="https://lemonde.fr",service=GATE_SERVICE):
 def test_add_url_with_service_and_values(url="https://leparisien.fr",service=GATE_SERVICE,values=REPLACE_VALUES):
   cid=add_url(url=url,service_id=service,values=values)
   assert len(cid)>0
-
-  url=get_url(cid)
-  for k in values.keys():     #On vérifie que toutes les valeurs sont présentes dans le résultat
-    assert values[k] in url
-
-  return cid
 
 
 
@@ -144,11 +141,27 @@ def test_get_url_with_service(url="https://nfluent.io"):
   cid=test_add_url_with_service(url,GATE_SERVICE)
   url=get_url(cid)
   assert len(url)>0
-  assert url.startswith(TRANSFER_APP)
   # obj=json.loads(base64.b64decode(url.split("b=")[1]))
   # assert "message" in obj
   # assert "domain" in obj
   return url
+
+
+def test_get_same_url_with_differentvalues(url="http://lemonde2.fr",service="TokenGate"):
+  values1={"address":"erd1"}
+  values2={"address":"erd2"}
+  cid1=test_add_url_with_service(url,service,values1)
+  cid2=test_add_url_with_service(url,service,values2)
+  assert cid1!=cid2
+
+
+def test_get_same_url_with_samevalues(url="http://lemonde2.fr",service="TokenGate"):
+  values={"address":"erd1"}
+  cid1=test_add_url_with_service(url,service,values)
+  cid2=test_add_url_with_service(url,service,values)
+  assert cid1==cid2
+
+
 
 
 

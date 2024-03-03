@@ -56,7 +56,7 @@ def _all(limit=2000):
     rc.append(dict(obj))
   return rc
 
-def delete(value:str,field="cid"):
+def del_link(value:str, field="cid"):
   if value=="*":
     rc=db["links"].delete_many({})
     cache.clear()
@@ -111,17 +111,7 @@ def get_url(cid:str) -> str:
 
   if not "values" in data:data["values"]=dict()
   data["values"]["url"]=data["url"]
-
-  if data["service"] and data["service"]!="":
-    data["service"]=db["services"].find_one({"id":data["service"]})
-    if data["service"] is None: raise RuntimeError(f"Service {data['service']} inexistant")
-    data["service"]=appply_values_on_service(data["service"]["data"],data["values"] if "values" in data else {})
-    url=convert_dict_to_url(data["service"],key_domain="domain")
-  else:
-    url=data["url"]
-
-  if type(url)==dict:
-    url=convert_dict_to_url(url)
+  url=data["url"]
 
   return url
 
@@ -156,10 +146,10 @@ def init_services(service_file="./static/services.yaml",replace=False):
 
   if not service_file.startswith("http"):
     hFile=open(service_file,"r")
-    services=yaml.safe_load(hFile,yaml.FullLoader)["services"]
   else:
-    services=yaml.safe_load(service_file,yaml.FullLoader)
+    hFile=requests.get(service_file).content
 
+  services=yaml.safe_load(hFile)["services"]
   for service in services:
     if not "domain" in service["data"]:service["data"]["domain"]=TRANSFER_APP
     if replace:
@@ -204,17 +194,31 @@ def is_expired(data:dict) -> bool:
   return False
 
 
-def add_url(url:str,service_id:str="",values:dict=dict(),prefix="",duration=0) -> str:
+def add_url(url:str or dict,service_id:str="",values:dict=dict(),prefix="",duration=0) -> str:
   """
 
   :param url:
   :return:
   """
+  if service_id=="": service_id=get_services()[0]["id"]
+  if type(url)==dict: url=convert_dict_to_url(url,"url")
   cid=None
-  obj=db["links"].find_one({"url":url,"service":service_id})
+
+
+  _service=db["services"].find_one({"id":service_id})
+  if _service is None:
+    raise RuntimeError(f"Service {service_id} inconnu")
+
+  if _service["data"]["domain"]!="":
+    _service["data"]["url"]=url
+    _data=appply_values_on_service(_service["data"],values)
+    url=convert_dict_to_url(_data,"domain")
+
+
+  obj=db["links"].find_one({"url":url})
   if obj:
     if is_expired(obj):
-      delete(url,"url")
+      del_link(url, "url")
     else:
       cid=obj["cid"]
 
@@ -222,15 +226,11 @@ def add_url(url:str,service_id:str="",values:dict=dict(),prefix="",duration=0) -
     cid=generate_cid()
     if cid=="": raise RuntimeError("impossible de généré le CID")
 
-  if obj is None:
-    if len(service_id)>0 and db["services"].find_one({"id":service_id}) is None:
-      raise RuntimeError(f"Service {service_id} inconnu")
-
     stats["write"]+=1
     now=int(datetime.datetime.now().timestamp())
-    data={"cid":cid,"url":url,"service":service_id,"dtCreate":now,"duration":duration,"values":values}
-    db["links"].insert_one(data)
 
+    data={"cid":cid,"url":url,"dtCreate":now,"duration":duration}
+    db["links"].insert_one(data)
     cache.insert(0,data)
     if len(cache)>CACHE_SIZE: cache.remove(cache[CACHE_SIZE])       #La taille du cache se limite a CACHE_SIZE
 
