@@ -24,6 +24,7 @@ RUN pip3 install -v Flask
 RUN pip3 install -v Flask-Cors
 RUN pip3 install -v gunicorn
 RUN pip3 install -v pyyaml
+RUN pip3 install -v requests
 
 
 
