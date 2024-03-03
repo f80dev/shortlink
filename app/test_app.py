@@ -31,7 +31,7 @@ def test_raz():
 
 
 def test_init_services():
-  init_services()
+  init_services(replace=True)
   services=get_services()
   assert len(services)>0
 

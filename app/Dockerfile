@@ -2,14 +2,15 @@
 #docker push f80hub/shortlinks:latest
 #docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 80:80 -p 5000:5000 -ti f80hub/shortlinks:latest
 #test sur serveur :
-#docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 443:443 -e PORT=443 -e SSL=True -e DBPATH=cloud -ti f80hub/shortlinks:latest
-#docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 80:80 -e PORT=80 -e DBPATH=cloud -ti f80hub/shortlinks:latest
+#docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 443:443 -e SERVICES_PATH=https://linkut.f80.fr/assets/services.yaml -e PORT=443 -e SSL=True -e DBPATH=cloud -ti f80hub/shortlinksv:latest
+#docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 80:80 -e SERVICES_PATH=https://linkut.f80.fr/assets/services.yaml -e PORT=80 -e DBPATH=cloud -ti f80hub/shortlinks:latest
 
 FROM python:3.13.0a3-alpine3.18
 RUN apk add py3-gunicorn
 RUN apk add py3-flask
 RUN apk add py3-pip
 RUN apk add py3-openssl
+
 
 
 #RUN ask add --no-cache python3-pymongo
@@ -23,6 +24,8 @@ RUN pip3 install -v Flask
 RUN pip3 install -v Flask-Cors
 RUN pip3 install -v gunicorn
 RUN pip3 install -v pyyaml
+
+
 
 #RUN pip3 install -v pyopenssl
 

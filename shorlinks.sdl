@@ -2,7 +2,7 @@
 version: "2.0"
 services:
   shortlinks:
-    image: f80hub/shortlinksv15:latest
+    image: f80hub/shortlinks:latest
     expose:
       - port: 443
         as: 443
@@ -16,6 +16,7 @@ services:
       - DBNAME=shortlinks
       - PORT=443
       - SSL=True
+      - SERVICES_PATH=https://linkut.f80.fr/assets/services.yaml
 profiles:
   compute:
     shortlinks:

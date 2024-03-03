@@ -9,6 +9,7 @@ import random
 from base64 import b64encode
 from urllib import parse
 
+import requests
 import yaml
 from pymongo import MongoClient
 
@@ -150,14 +151,24 @@ def del_service(service_id:str):
 
 
 
-def init_services(service_file="./static/services.yaml"):
-  del_service("*")
-  with open(service_file,"r") as hFile:
-    for service in yaml.load(hFile,yaml.FullLoader)["services"]:
-      if not "domain" in service["data"]:service["data"]["domain"]=TRANSFER_APP
-      if not db["services"].find_one({"id":service["id"]}):
-        service["data"]["url"]=""
-        add_service(service["service"],service["data"],service["id"],service["description"])
+def init_services(service_file="./static/services.yaml",replace=False):
+  logging.info(f"Chargement des services depuis {service_file}")
+
+  if not service_file.startswith("http"):
+    hFile=open(service_file,"r")
+    services=yaml.safe_load(hFile,yaml.FullLoader)["services"]
+  else:
+    services=yaml.safe_load(service_file,yaml.FullLoader)
+
+  for service in services:
+    if not "domain" in service["data"]:service["data"]["domain"]=TRANSFER_APP
+    if replace:
+      logging.info("Remplacement de "+service["id"])
+      db["services"].delete_one({"id":service["id"]})
+
+    if not db["services"].find_one({"id":service["id"]}):
+      service["data"]["url"]=""
+      add_service(service["service"],service["data"],service["id"],service["description"])
 
 
 def get_services():

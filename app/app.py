@@ -1,15 +1,12 @@
-import base64
 import logging
 import os
 import ssl
 import sys
-from json import dump, dumps
-from urllib.parse import urlparse
 
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 
-from tools import get_url, add_url, _all, get_services, stats, init_services
+from tools import get_url, add_url, _all, get_services, stats, init_services, del_service
 
 app = Flask(__name__)
 CORS(app)
@@ -41,12 +38,38 @@ def info_api():
   return jsonify({"statistiques":stats})
 
 
+@app.route("/api/delete_services/", methods=["GET"])
+def del_services_api():
+  """
+  test: http://127.0.0.1:80/api/services/
+  test: https://x.f80.fr:30630/api/services/
+  :return:
+  """
+  password=request.args.get("password","")
+  service_id=request.args.get("id","*")
+  if password==(os.environ["PASSWORD"] if "PASSWORD" in os.environ else "4271"): del_service(service_id)
+  return jsonify(get_services())
+
+
+
 @app.route("/api/services/", methods=["GET"])
 def services_api():
   """
   test: http://127.0.0.1:80/api/services/
+  test: https://x.f80.fr:30630/api/services/
   :return:
   """
+  return jsonify(get_services())
+
+@app.route("/api/update_services/", methods=["GET"])
+def api_update_services():
+  """
+  test: http://127.0.0.1:80/api/update_services/
+  test: https://x.f80.fr:30630/api/update_services/?url=https://linkut.f80.fr/assets/services.yaml
+  :return:
+  """
+  url=request.args.get("url","./static/services.yaml")
+  init_services(url,replace=True)
   return jsonify(get_services())
 
 
@@ -84,7 +107,7 @@ def ap_get(cid=""):
 
 if __name__ == "__main__":
   port=(os.environ["PORT"] if "PORT" in os.environ else None) or (sys.argv[1] if len(sys.argv)>1 and sys.argv[1].isdigit() else None) or "80"
-  init_services()
+  init_services(os.environ["SERVICES_PATH"] if "SERVICES_PATH" in os.environ else "./static/services.yaml",replace=True)
   for service in get_services():
     logging.info("service "+service['service']+" disponible")
 
