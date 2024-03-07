@@ -168,6 +168,13 @@ def get_services():
 
   return rc
 
+def get_links():
+  rc=list(db["links"].find())
+  for link in rc:
+    del link["_id"]
+
+  return rc
+
 
 
 
@@ -209,6 +216,7 @@ def add_url(url:str or dict,service_id:str="",values:dict=dict(),prefix="",durat
   if _service is None:
     raise RuntimeError(f"Service {service_id} inconnu")
 
+  _service["data"]["service"]=service_id
   if _service["data"]["domain"]!="":
     _service["data"]["url"]=url
     _data=appply_values_on_service(_service["data"],values)

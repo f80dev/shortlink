@@ -6,7 +6,7 @@ import sys
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 
-from tools import get_url, add_url, _all, get_services, stats, init_services, del_service
+from tools import get_url, add_url, _all, get_services, stats, init_services, del_service, get_links
 
 app = Flask(__name__)
 CORS(app)
@@ -60,6 +60,19 @@ def services_api():
   :return:
   """
   return jsonify(get_services())
+
+
+@app.route("/api/links/", methods=["GET"])
+def links_api():
+  """
+  test: http://127.0.0.1:80/api/links/
+  test: https://x.f80.fr:30630/api/links/
+  :return:
+  """
+  return jsonify(get_links())
+
+
+
 
 @app.route("/api/update_services/", methods=["GET"])
 def api_update_services():
