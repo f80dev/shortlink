@@ -180,11 +180,21 @@ def test_api_add_url(url="https://liberation.fr",duration=0,values=REPLACE_VALUE
 
 
 
+def test_api_get_url_out_timeout(url="https://nfluent.io",duration=1):
+  cid=test_api_add_url(url=url,duration=duration)
+  sleep(duration*10)
+  response=app.test_client().get("/"+cid+"?format=json",headers=headers)
+  assert response.status.startswith("500")
+  assert del_link(cid,"cid")
+
 def test_api_get_url_in_timeout(url="https://nfluent.io",duration=1):
-  cid=test_api_add_url(url=url,duration=duration/10)
-  sleep(62.0/10)
-  response=app.test_client().get("/"+cid,headers=headers)
-  assert response.text==""
+  cid=test_api_add_url(url=url,duration=duration*3)
+  sleep(duration)
+  response=app.test_client().get("/"+cid+"?format=json",headers=headers)
+  assert response.status=="200 OK"
+  assert del_link(cid,"cid")
+
+
 
 
 def test_api_get_url(url="https://lemonde.fr"):

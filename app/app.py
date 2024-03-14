@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import ssl
@@ -99,6 +100,7 @@ def ap_get(cid=""):
     #test http://localhost:80/tr1uHIQ==
     if cid=="favicon.ico": return jsonify({"message":"ok"})
     url=get_url(cid)
+    if url is None: return "url introuvable",500
 
     format=request.args.get("format","redirect") if type(url)==str else "json"
     if format=="json": return jsonify({"url":url} if len(url)>0 else {"Error":f"{cid} introuvable"})
@@ -110,6 +112,7 @@ def ap_get(cid=""):
   if request.method == "POST":
     #récupration des parametres
     url=request.json["url"]
+    logging.info("Demande de réduction de "+url+" avec data="+json.dumps(request.json["values"]))
     duration=request.json["duration"] if "duration" in request.json else 0
     service=request.json["service"] if "service" in request.json else ""
 

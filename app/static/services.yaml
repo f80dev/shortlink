@@ -13,60 +13,71 @@ services:
       domain: ''
     description: Redirection simple
 
+
   - service: Preuve d'humanitee
     id: poh
     data:
-      domain: https://gate.nfluent.io/transfer
+      domain: "{{gate_server}}"
+      style: "background-color:grey"
       message: Pour continuez, veuillez cliquer
     description: Vérifie que l'internaute n'est pas un robot
+
+
 
   - service: Authentification par wallet
     id: authent
     data:
       network: elrond-devnet
+      style: "background-color:grey"
       connexion:
-        address: False
-        keystore: False
         wallet_connect: True
-        email: False
-        google: False
         extension_wallet: True
-        web_wallet: True
-        private_key: False
-        direct_connect: True
-        nfluent_wallet_connect: False
-      domain: https://gate.nfluent.io/transfer
+      domain: "{{gate_server}}"
       message: Pour continuez, veuillez connecter votre wallet
     description: Identification du wallet MvX
 
 
-  - service: Landing page
+  - service: Afficher une landing page
     id: landing_page
     data:
-      domain: https://gate.nfluent.io/transfer
-      background: "black"
+      style: "background-color:grey"
+      domain: "{{gate_server}}"
       quantity: 1
-    description: Permet d'afficher une écran, une image, une couleur pendant {{quantity}} secondes avant la redirection
+    description: "
+      Permet d'afficher {{background}} en fond d'écran
+      pendant {{quantity}} secondes avant la redirection
+    "
 
 
-  - service: Facturer des eGld
-    id: TokenGate
+
+  - service: "Accès limité aux détenteur de NFT"
+    id: nft_gate
     data:
-      domain: https://gate.nfluent.io/transfer
+      domain: "{{gate_server}}"
+      token: egld
+      connexion:
+        wallet_connect: True
+        extension_wallet: True
+        direct_connect: True
+      network: elrond-devnet
+      style: "background-color:grey"
+    description: "
+      Seul les détenteurs d'un NFT de la collection {{collection}}
+      sont autorisé à accéder au lien
+    "
+
+  - service: "Péage: exiger une crypto pour atteindre le lien"
+    id: token_gate
+    data:
+      domain: "{{gate_server}}"
       message: Pour continuez, veuillez régler {{quantity}} {{token}}
       token: egld
       connexion:
-        address: False
-        keystore: False
         wallet_connect: True
-        email: False
-        google: False
         extension_wallet: True
-        web_wallet: True
-        private_key: False
         direct_connect: True
-        nfluent_wallet_connect: False
       network: elrond-devnet
+      style: "background-color:grey"
       quantity: 0.01
       address: "?"
     description: L'utilisateur doit payer {{quantity}} {{token}} sur le {{network}} pour accéder au lien {{url}}

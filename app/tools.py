@@ -142,19 +142,33 @@ def del_service(service_id:str):
 
 
 def init_services(service_file="./static/services.yaml",replace=False):
+  """
+  Chargement des services
+  :param service_file:
+  :param replace:
+  :return:
+  """
   logging.info(f"Chargement des services depuis {service_file}")
 
-  if not service_file.startswith("http"):
-    hFile=open(service_file,"r")
-  else:
-    hFile=requests.get(service_file).content
+  hFile=None
+  if service_file.startswith("http"):
+    resp=requests.get(service_file)
+    if resp.status_code==200:
+      hFile=resp.content
+    else:
+      logging.error("Impossible de charger le fichier indiqué")
+      service_file="./static/services.yaml"
+
+  if hFile is None:
+    hFile=open(service_file,"r",encoding="utf8")
 
   services=yaml.safe_load(hFile)["services"]
   for service in services:
     if not "domain" in service["data"]:service["data"]["domain"]=TRANSFER_APP
     if replace:
       logging.info("Remplacement de "+service["id"])
-      db["services"].delete_one({"id":service["id"]})
+      if db["services"].delete_one({"id":service["id"]}).deleted_count==0:
+        logging.warning("Impossible de supprimer "+service["id"])
 
     if not db["services"].find_one({"id":service["id"]}):
       service["data"]["url"]=""
@@ -179,6 +193,7 @@ def get_links():
 
 
 def add_service(service:str,data:dict,id="",description=""):
+  logging.info("Ajout du service "+service)
   if not "domain" in data: raise RuntimeError("Le service doit contenir un domain")
 
   if id=="":
@@ -196,8 +211,9 @@ def add_service(service:str,data:dict,id="",description=""):
 
 
 def is_expired(data:dict) -> bool:
-  now=int(datetime.datetime.now().timestamp())
-  if data["duration"]>0 and data["dtCreate"]+data["duration"]<now: return True
+  delay=datetime.datetime.now().timestamp()-data["dtCreate"]
+
+  if data["duration"]>0 and delay>data["duration"]: return True
   return False
 
 
