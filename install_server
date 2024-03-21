@@ -1,4 +1,4 @@
 docker pull f80hub/shortlinks:latest
 docker ps -q --filter "name=shortlinks" | grep -q . && docker rm -f shortlinks
-docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 443:443 -e SERVICES_PATH=https://linkut.f80.fr/assets/services.yaml -e PORT=443 -e SSL=True -e DBPATH=cloud -ti f80hub/shortlinksv:latest
+docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -restart=always -p 99:99 -e SERVICES_PATH=https://linkut.f80.fr/assets/services.yaml -e PORT=99 -e SSL=True -e DBPATH=cloud -d f80hub/shortlinks:latest
 exit

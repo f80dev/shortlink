@@ -84,11 +84,20 @@ def appply_values_on_service(service:dict,values:dict):
 
 
 def convert_dict_to_url(obj:dict,key_domain=REDIRECT_NAME,convert_mode="base64") -> str:
-  if not key_domain in obj:raise RuntimeError("Le champs "+key_domain+" n'est pas présent dans l'objet")
+  """
+  Transform a dict to url and use key domain for the domain
+  :param obj:
+  :param key_domain:
+  :param convert_mode:
+  :return:
+  """
 
   obj=obj.copy()
-  domain=obj[key_domain]
-  del obj[key_domain]
+  domain=""
+  if len(key_domain)>0:
+    domain=obj[key_domain]
+    del obj[key_domain]
+
   if convert_mode=="base64":
     params=["b="+parse.quote(str(base64.b64encode(bytes(json.dumps(obj),"utf8")),"utf8"))]
   else:
@@ -144,6 +153,7 @@ def del_service(service_id:str):
 def init_services(service_file="./static/services.yaml",replace=False):
   """
   Chargement des services
+  http://localhost/api/init_services
   :param service_file:
   :param replace:
   :return:
@@ -164,15 +174,14 @@ def init_services(service_file="./static/services.yaml",replace=False):
 
   services=yaml.safe_load(hFile)["services"]
   for service in services:
-    if not "domain" in service["data"]:service["data"]["domain"]=TRANSFER_APP
     if replace:
-      logging.info("Remplacement de "+service["id"])
+      logging.info("Remplacement de "+service["id"]+" par "+json.dumps(service))
       if db["services"].delete_one({"id":service["id"]}).deleted_count==0:
         logging.warning("Impossible de supprimer "+service["id"])
 
     if not db["services"].find_one({"id":service["id"]}):
-      service["data"]["url"]=""
-      add_service(service["service"],service["data"],service["id"],service["description"])
+      if not "params" in service:service["params"]=dict()
+      add_service(service)
 
 
 def get_services():
@@ -192,20 +201,19 @@ def get_links():
 
 
 
-def add_service(service:str,data:dict,id="",description=""):
-  logging.info("Ajout du service "+service)
-  if not "domain" in data: raise RuntimeError("Le service doit contenir un domain")
+def add_service(service:dict):
+  logging.info("Ajout du service "+str(service))
+  #if not "domain" in data: raise RuntimeError("Le service doit contenir un domain")
 
-  if id=="":
-    id=hashlib.sha256(bytes(json.dumps(data),'utf8')).hexdigest()
+  if "id" not in service:
+    id=hashlib.sha256(bytes(json.dumps(service),'utf8')).hexdigest()
 
-  _service=db["services"].find_one({"id":id})
+  _service=db["services"].find_one({"id":service["id"]})
 
   if _service is None:
     stats["write"]+=1
-    body={"service":service,"data":data,"id":id,"desc":description}
-    rc=db["services"].insert_one(body)
-    if rc.acknowledged: return body
+    rc=db["services"].insert_one(service)
+    if rc.acknowledged: return service
 
   return None     #En cas d'échec
 
@@ -217,26 +225,26 @@ def is_expired(data:dict) -> bool:
   return False
 
 
-def add_url(url:str or dict,service_id:str="",values:dict=dict(),prefix="",duration=0) -> str:
+def add_url(url:str or dict,values:dict=dict(),prefix="",duration=0) -> str:
   """
 
   :param url:
   :return:
   """
-  if service_id=="": service_id=get_services()[0]["id"]
+  #if service_id=="": service_id=get_services()[0]["id"]
   if type(url)==dict: url=convert_dict_to_url(url,"url")
   cid=None
 
 
-  _service=db["services"].find_one({"id":service_id})
-  if _service is None:
-    raise RuntimeError(f"Service {service_id} inconnu")
+  # _service=db["services"].find_one({"id":service_id})
+  # if _service is None:
+  #   raise RuntimeError(f"Service {service_id} inconnu")
 
-  _service["data"]["service"]=service_id
-  if _service["data"]["domain"]!="":
-    _service["data"]["url"]=url
-    _data=appply_values_on_service(_service["data"],values)
-    url=convert_dict_to_url(_data,"domain")
+  #_service["data"]["service"]=service_id
+  if values!=dict():
+    url=url+convert_dict_to_url(values,"")
+  # if _service["params"]!=dict():
+  #   _data=appply_values_on_service(_service["params"],values)
 
 
   obj=db["links"].find_one({"url":url})

@@ -4,57 +4,43 @@ desc:
   présnte quelques services de base utilisable avec l'application de redirection
 
 #le champs data est passé au service de redirection avec un éventuel traitement préalable
+#url désigne l'url à raccourcir
+# dans certains cas l'url est le gate server pour procéder au filtrage (péage)
+
 
 
 services:
-  - service: Redirection
-    id: redirect
-    data:
-      domain: ''
-    description: Redirection simple
 
+  - service: "Facturer en crypto"
+    id: token_gate
+    url: "{{gate_server}}"
+    params:
+      target: "{{url}}"
+      messages:
+        intro: "Pour continuez, veuillez régler {{quantity}} {{token}}"
 
-  - service: Preuve d'humanitee
-    id: poh
-    data:
-      domain: "{{gate_server}}"
-      style: "background-color:grey"
-      message: Pour continuez, veuillez cliquer
-    description: Vérifie que l'internaute n'est pas un robot
-
-
-
-  - service: Authentification par wallet
-    id: authent
-    data:
-      network: elrond-devnet
-      style: "background-color:grey"
+      token: egld
       connexion:
         wallet_connect: True
         extension_wallet: True
-      domain: "{{gate_server}}"
-      message: Pour continuez, veuillez connecter votre wallet
-    description: Identification du wallet MvX
-
-
-  - service: Afficher une landing page
-    id: landing_page
-    data:
+        direct_connect: True
+      network: elrond-devnet
       style: "background-color:grey"
-      domain: "{{gate_server}}"
-      quantity: 1
-    description: "
-      Permet d'afficher {{background}} en fond d'écran
-      pendant {{quantity}} secondes avant la redirection
-    "
-
+      quantity: 0.01
+      address: "?"
+    description: L'utilisateur doit payer {{quantity}} {{token}} sur le {{network}} pour accéder au lien {{url}}
 
 
   - service: "Accès limité aux détenteur de NFT"
     id: nft_gate
-    data:
-      domain: "{{gate_server}}"
+    url: "{{gate_server}}"
+    params:
+      target: "{{url}}"
+      collection: "?"
       token: egld
+      messages:
+        intro: "Pour vous connecter vous devez posséder au moins un NFT de la collection {{collection}}"
+
       connexion:
         wallet_connect: True
         extension_wallet: True
@@ -66,20 +52,53 @@ services:
       sont autorisé à accéder au lien
     "
 
-  - service: "Péage: exiger une crypto pour atteindre le lien"
-    id: token_gate
-    data:
-      domain: "{{gate_server}}"
-      message: Pour continuez, veuillez régler {{quantity}} {{token}}
-      token: egld
+  - service: Redirection instantanée
+    id: redirect
+    url: "{{url}}"
+    description: Redirection simple sans filtre
+
+
+
+  - service: Afficher une landing page
+    id: landing_page
+    url: "{{gate_server}}"
+    params:
+      target: "{{url}}"
+      messages:
+        intro: "Vous allez être redirigé dans quelques secondes"
+      style: "background-color:grey"
+      quantity: 1
+    description: "
+      Permet d'afficher {{background}} en fond d'écran
+      pendant {{quantity}} secondes avant la redirection
+    "
+
+
+  - service: Authentification par wallet
+    id: authent
+    url: "{{gate_server}}"
+    params:
+      target: "{{url}}"
+      network: elrond-devnet
+      style: "background-color:grey"
       connexion:
         wallet_connect: True
         extension_wallet: True
-        direct_connect: True
-      network: elrond-devnet
+      message: Pour continuez, veuillez connecter votre wallet
+    description: Identification du wallet MvX et transmission de l'adresse à {{url}}
+
+
+
+
+  - service: Preuve d'humanitee
+    id: poh
+    url: "{{gate_server}}"
+    params:
+      target: "{{url}}"
       style: "background-color:grey"
-      quantity: 0.01
-      address: "?"
-    description: L'utilisateur doit payer {{quantity}} {{token}} sur le {{network}} pour accéder au lien {{url}}
+      message: Pour continuez, veuillez cliquer
+    description: Vérifie que l'internaute n'est pas un robot
+
+
 
 

@@ -36,15 +36,17 @@ def test_init_services():
   services=get_services()
   assert len(services)>0
 
-def test_load_services(id="servicetest"):
-  add_service("gate",{"domain":TRANSFER_APP},id)
+def test_load_services(id="nftcheck"):
+  service={"id":id,"description":"coucou","params":{}}
+  add_service(service)
   services=get_services()
   assert len(services)>0
   del_service(id)
 
 def test_add_service(id="nftcheck"):
   del_service(id)
-  assert add_service("nftcheck",{"domain":"https://gate.nfluent.io/"},id)
+  service={"id":id,"description":"coucou","params":{}}
+  assert add_service(service)
   del_service(id)
 
 

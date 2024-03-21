@@ -86,39 +86,51 @@ def api_update_services():
   init_services(url,replace=True)
   return jsonify(get_services())
 
+@app.route("/api/help/", methods=["GET"])
+def api_help():
+  """
+  test: http://127.0.0.1:80/api/update_services/
+  test: https://x.f80.fr:30630/api/update_services/?url=https://linkut.f80.fr/assets/services.yaml
+  :return:
+  """
+  help="pour raccourcir une url utiliser simplement POST sur /apo/add"
+  return help
+
 
 
 @app.route("/t<cid>", methods=["GET"])
+def api_get(cid=""):
+  #test http://localhost:80/tr1uHIQ==
+  if cid=="favicon.ico": return jsonify({"message":"ok"})
+  url=get_url(cid)
+  if url is None: return "url introuvable",500
+
+  format=request.args.get("format","redirect") if type(url)==str else "json"
+  if format=="json": return jsonify({"url":url} if len(url)>0 else {"Error":f"{cid} introuvable"})
+
+  url=url + ("?"+str(request.query_string,'utf8') if str(request.query_string,"utf8")!='' else "")
+  if format=="text": return url
+  return redirect(url)
+
+
+
 @app.route("/api/add/", methods=["POST"])
-def ap_get(cid=""):
+def api_post():
   """
   Lecture de url raccourcis
   :param cid:
   :return: retourne les parametres stocké ou une redirection si les parametres stockés sont un object contenant redirect ou sont une url
   """
-  if request.method == "GET":
-    #test http://localhost:80/tr1uHIQ==
-    if cid=="favicon.ico": return jsonify({"message":"ok"})
-    url=get_url(cid)
-    if url is None: return "url introuvable",500
+  #récupration des parametres
+  assert "url" in request.json,"Auncune url à raccourcir"
+  url=request.json["url"]
+  logging.info("Demande de réduction de "+url+" avec data="+json.dumps(request.json["values"]))
+  duration=request.json["duration"] if "duration" in request.json else 0
 
-    format=request.args.get("format","redirect") if type(url)==str else "json"
-    if format=="json": return jsonify({"url":url} if len(url)>0 else {"Error":f"{cid} introuvable"})
+  logging.info(f"Création d'un lien {url} avec une durée de validité de {duration}")
+  data=add_url(url,prefix="t",duration=duration,values=request.json["values"])
+  return jsonify({"cid":data})
 
-    url=url + ("?"+str(request.query_string,'utf8') if str(request.query_string,"utf8")!='' else "")
-    if format=="text": return url
-    return redirect(url)
-
-  if request.method == "POST":
-    #récupration des parametres
-    url=request.json["url"]
-    logging.info("Demande de réduction de "+url+" avec data="+json.dumps(request.json["values"]))
-    duration=request.json["duration"] if "duration" in request.json else 0
-    service=request.json["service"] if "service" in request.json else ""
-
-    logging.info(f"Création d'un lien {url} pour le service {service} avec une durée de validité de {duration}")
-    data=add_url(url,service,prefix="t",duration=duration,values=request.json["values"])
-    return jsonify({"cid":data})
 
 
 if __name__ == "__main__":

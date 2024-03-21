@@ -1,3 +1,8 @@
+#renouvellement des certificats
+#Pour le server F80: certbot certonly --standalone --email hhoareau@gmail.com -d api.f80.fr && cp /etc/letsencrypt/live/api.f80.fr/* /root/certs_f80fr
+#si on passe par let's encrypt
+
+
 #docker build -t f80hub/shortlinks .
 #docker push f80hub/shortlinks:latest
 #docker rm -f shortlinks && docker pull f80hub/shortlinks && docker run --name shortlinks -p 80:80 -p 5000:5000 -ti f80hub/shortlinks:latest
