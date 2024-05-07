@@ -1,0 +1,9 @@
+<script>
+  const url = new URL(window.location.href);
+  let id=url.search.slice(1)
+  if(id!=""){
+    location.href="https://t.f80.fr:444/"+id;
+  }else{
+    window.close();
+  }
+</script>

@@ -99,11 +99,12 @@ def api_help():
 
 
 @app.route("/t<cid>", methods=["GET"])
+@app.route("/api/redirect/<cid>", methods=["GET"])
 def api_get(cid=""):
   #test http://localhost:80/tr1uHIQ==
   if cid=="favicon.ico": return jsonify({"message":"ok"})
   url=get_url(cid)
-  if url is None: return "url introuvable",500
+  if url is None: return "redirection code unknown",500
 
   format=request.args.get("format","redirect") if type(url)==str else "json"
   if format=="json": return jsonify({"url":url} if len(url)>0 else {"Error":f"{cid} introuvable"})
@@ -114,22 +115,29 @@ def api_get(cid=""):
 
 
 
+
 @app.route("/api/add/", methods=["POST"])
 def api_post():
   """
-  Lecture de url raccourcis
+  Demande de raccourcissement d'url
   :param cid:
   :return: retourne les parametres stocké ou une redirection si les parametres stockés sont un object contenant redirect ou sont une url
   """
   #récupration des parametres
   assert "url" in request.json,"Auncune url à raccourcir"
+
   url=request.json["url"]
-  logging.info("Demande de réduction de "+url+" avec data="+json.dumps(request.json["values"]))
+  values=request.json["values"] if "values" in request.json else {}
+  # service=request.json["service"] if "service" in request.json else "redirect"
+
+  logging.info("Demande de réduction de "+url+" avec data="+json.dumps(values))
   duration=request.json["duration"] if "duration" in request.json else 0
 
   logging.info(f"Création d'un lien {url} avec une durée de validité de {duration}")
-  data=add_url(url,prefix="t",duration=duration,values=request.json["values"])
+  data=add_url(url,prefix="t",duration=duration,values=values)
   return jsonify({"cid":data})
+
+
 
 
 

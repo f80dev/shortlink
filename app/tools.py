@@ -83,6 +83,9 @@ def appply_values_on_service(service:dict,values:dict):
   return service
 
 
+
+
+
 def convert_dict_to_url(obj:dict,key_domain=REDIRECT_NAME,convert_mode="base64") -> str:
   """
   Transform a dict to url and use key domain for the domain
@@ -108,11 +111,12 @@ def convert_dict_to_url(obj:dict,key_domain=REDIRECT_NAME,convert_mode="base64")
 
 
 def get_url(cid:str) -> str:
+  cid=str(cid)
   data=find(cid,"cid")
 
   #Condition d'éligibilité
   if data is None:
-    logging.ERROR(f"{cid} inconnu")
+    logging.error(f"{cid} inconnu")
     return None
 
   if is_expired(data):
@@ -152,7 +156,7 @@ def del_service(service_id:str):
 
 def init_services(service_file="./static/services.yaml",replace=False):
   """
-  Chargement des services
+  Chargement des services disponibles en plus du raccourcissement simple
   http://localhost/api/init_services
   :param service_file:
   :param replace:

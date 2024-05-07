@@ -1,0 +1,2 @@
+cd web
+live-server
