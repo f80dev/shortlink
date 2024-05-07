@@ -5,7 +5,7 @@ services:
     image: f80hub/shortlinks:latest
     expose:
       - port: 443
-        as: 443
+        as: 543
         to:
           - global: true
         accept:
